@@ -47,12 +47,7 @@ CREATING SLIDES/PRESENTATION
 
 ### Technical Background
 
-> **NOTE:** Describe background information that will be useful to help understand how this feature will be used or integrated into the product. 
----
-### Technical Background
-
-> **NOTE** Use this section to cover existing concepts and the Key Concepts chart to cover new material that will need documentation.
-
+> **NOTE:** Describe background information that will be useful to help understand how this feature will be used or integrated into the product. Use this section to cover existing concepts and the Key Concepts chart to cover new material that will need documentation.
 ---
 
 ### Problem Statement
@@ -80,9 +75,6 @@ CREATING SLIDES/PRESENTATION
 
 > **NOTE:** For each story in that will be delivered (this may go beyond the MVP, but for initial socialization only the MVP is required. If additional stories are to be delivered the UFO will need to be updated). This should focus on what someone would need to do to get this today. Note that even when adding something net new it is often possible to do it today, but the user experience won't be good. This is to ensure people understand what the user experience would be without this feature.
 
----
-### As-Ins
-> **NOTE:** Enter any additional information about As-Ins on this slide.
 
 ---
 ### To-Be
@@ -102,10 +94,6 @@ li  { font-size: 22px; }
 > - Are there any multi-version co-existence problems to solve?
 > - How is High Availability achieved? How do you avoid single points of failure?
 > - Capture any net new open source dependencies. If upgrading make sure we don't ship multiple versions of same open source.
-
----
-### Feature Design
-
 
 ---
 
@@ -134,20 +122,18 @@ li  { font-size: 21px; }
 > - Sample scripts to drive capability
 > - Getting started guide to use feature (doc and/or video)
 > - Communication on social media
->(More on next slide)
----
-### Communication
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
 > - Open Liberty guides (https://openliberty.io/guides). Engaging developers and the community is important and key to our Open Liberty's strategy. Open Liberty guides are designed to take developers through a particular topic or technology in 15 or 20 mins providing meaningful learning experience to engage them. If the feature applies to Open Liberty and is relevant to developers, consider if guides should be created to engage developers and the community. Contact YK Chang if you need help determining if a guide is appropriate.
 >
 > These might be delivered via WASdev.net, the middleware blog, the WASdev github org, openliberty.io, the OpenLiberty github org or elsewhere.  
 > When looking at this section you MUST identify the target audience for what is being provided and should be related into the dev/ops lifecycle.  
 > Make sure you contact the publication venue early to ensure that it is an appropriate place to put the content; you don't want to ask someone to publish something that is done only to discover they say no.
 
-
+---
+### Communication
+<style scoped>
+p { font-size: 22px; }
+li  { font-size: 21px; }
+</style>
 ---
 ### Java APIs/SPIs
 <style scoped>
@@ -204,13 +190,6 @@ li { font-size: 21px; }
 >    - Jakarta EE
 >    - MicroProfile
 >    - Liberty configuration
-> (See 5, 6 and 7 on next slide)
----
-### Developer Experience
-<style scoped>
-p { font-size: 24px; }
-li { font-size: 21px; }
-</style>
 > 5. Build tools
 >    - Maven (and Liberty Maven plugin)
 >    - Gradle (and Liberty Gradle plugin)
@@ -223,6 +202,8 @@ li { font-size: 21px; }
 >    - Popular CI/CD/DevOps tools
 >
 > Note to System Testers: Since you are the first consumers of the feature, if you feel the Developer Experience is lacking, that is valuable input!
+---
+### Developer Experience
 
 ---
 
@@ -248,16 +229,12 @@ li { font-size: 21px; }
 >
 > - Does the functionality provided by this UFO support InstantOn? If not, justify why not.
 > - Can the feature respond to dynamic updates to Liberty configuration associated with the feature? If not, identify the configuration.
->
-> (See more on next slide.)
-
----
-### InstantOn 
 > - Do dynamic updates to Liberty configuration associated with the feature require applications to restart? If so, identify the configuration.
 > - Is there Liberty configuration associated with the feature that is typically only known at the time the application is deployed? If so, identify the configuration. For example, hostname, port or credentials to connect to a remote resource.
 > - For Liberty configuration that is typically only known at the time the application is deployed, can the server tolerate being started without the configuration present? How would the configuration be parameterized such that it can be set at deployment time?
 > - Does the feature establish state while the server is starting or an application is starting which needs special consideration when restoring an application process into multiple running instances? For example, a unique ID (e.g. UUID) that must be unique for each running instance of the application.
-
+---
+### InstantOn 
 ---
 
 ### Versionless Features
@@ -273,12 +250,6 @@ li { font-size: 21px; }
 
 ---
 
-### Versionless Features
-
-> **NOTE** Additional Information Here
-
----
-
 ## Quality Assurance
 ---
 
@@ -291,25 +262,17 @@ li { font-size: 21px; }
 > - Location (link)
 > - License
 > - What version (at min) will be used? If this is not the latest version, why? Is this a common version used throughout Liberty? Do any other versions of this OSS already exist in Liberty?
->
-> (See more on next slide)
-
-
----
-### Open Source Software
 > - What is the overall health and security posture of the project? Consider the following to help you answer (Note: these are just guidelines; you are not expected to know or answer all of these; if the info is not readily known/available, just state so):
 >   - Does the OSS project accept outside contributions (for example, PRs for fixing issues)
 >   - Do we have any committers in the community?
 >   - Is there a process to become a committer?
 >   - Are reported security vulnerabilities resolved in a timely manner (in-line with timelines practiced in Liberty)?
->
-> (See more on next slide)
-
----
-### Open Source Software
 >   - Are dependencies updated to pull in CVE fixes?
 >   - What's the overall health of the OSS community? Consider things such as: How many commits have occurred in last quarter? How many active contributors? If known, are all contributions coming from a single company/institution/country or from a diverse pool? If issues are opened, do they receive appropriate attention?
 >   - Anything else that may raise concerns?
+
+---
+### Open Source Software
 
 ---
 ### Beta
@@ -329,8 +292,6 @@ li { font-size: 18px; }
 > 4. Mark the function as `@deprecated`. Then, use the Beta Edition JVM Property to handle the beta fencing. If the property is true, allow the beta method to continue normally and issue a message if its the first time any beta method has been called for that class. If the property is false, throw `UnsupportedOperationException`. You can access the Beta Edition JVM Property by calling static method `getBetaEdition()` in `com.ibm.ws.kernel.productinfo.ProductInfo` in `com.ibm.ws.kernel.boot.core`. To get tests for beta fenced methods to run, set the beta edition property in jvm.options for the server by adding the following: `-Dcom.ibm.ws.beta.edition=true`
 >
 > If you are using one of those 4 options, just say which one. If you are using a different approach, please describe it.
----
-### Beta
 
 ---
 
@@ -379,28 +340,13 @@ li  { font-size: 20px; }
 > Authentication and authorization  
 > Hardening guidelines  
 > Contact the security team for any security hardening guidelines that need to be listed for this feature. For example, if there is an option to use http or https (irrespective of the default) our CIS (Center for Internet Security) hardening benchmark (https://workbench.cisecurity.org/benchmarks/7724) needs to be updated. You can look at the existing recommendations to get more idea or ask the security team. Note that you need to create an account for CIS and become part of the WebSphere community to see the existing benchmarks.  
-> (More on next slide)
----
-### Security
-<style scoped>
-p { font-size: 23px; }
-li  { font-size: 19px; }
-</style>
 > Do you need to identify the client, do you need to apply access control. If so what and how?  
 > Input validation and output encoding  
 > Any input from an untrusted source should be validated to ensure no bad side-effects. Think SQL injection, XSS attack vectors. How can you avoid?  
 > Cryptography and integrity / Data at rest / Data in motion  
 > Are you protecting data in memory and on a network link appropriately. E.g. don't send a password via http, don't log/trace passwords.  
 > If you call the Java Crypto API then articulate how you plan to use it, what algorithms etc. This should be sufficient detail to allow someone well versed in crypto to be able to review what you have done and spot holes.  
-> Are there any operating system nuances that affect security? Should any files being delivered be more protected than the default. Most files for Liberty are world readable, should any files be more restricted than that by default? Should it only be visible to a user, or the user and group?  
->(More on next slide)
-
----
-### Security
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 19px; }
-</style>
+> Are there any operating system nuances that affect security? Should any files being delivered be more protected than the default. Most files for Liberty are world readable, should any files be more restricted than that by default? Should it only be visible to a user, or the user and group? 
 > You should create a task to validate that your feature works with Java 2 security. A personal build should be run with the full feature code enabled, and all relevant FAT and unit tests run in FULL (not just Lite) mode. The task can be closed when such a build passes with no Java 2 security failures in your new feature code (we understand that there are existing places with Java 2 security failures, which can be ignored for this purpose).  
 > You should create a task to add any audit instrumentation necessary for the feature. Contact the security team if you are not familiar with the security auditing requirements. Things that are auditable include, but are not limited to:
 >
@@ -414,6 +360,10 @@ li  { font-size: 19px; }
 > - Mbeans
 > - Systems management operations
 > - UI Changes
+---
+### Security
+
+
 ---
 ### Serviceability
 <style scoped>

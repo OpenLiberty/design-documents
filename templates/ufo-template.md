@@ -1,5 +1,15 @@
 ---
 marp: true
+theme: default
+paginate: true
+style: |
+  p {
+    font-size: 20px;
+  }
+  li {
+    font-size: 16px;
+  }
+
 ---
 <!--
 Guidance on using the template
@@ -11,15 +21,9 @@ Guidance on using the template
 CREATING SLIDES/PRESENTATION
 - To create slides from this document, you can use Marp (Markdown Presentation Ecosystem):
    - Install Marp VSCode extension or CLI
-   - Export to PDF/HTML/PPTX (Google chrome must be installed)
+   - Export to PDF/HTML/PPTX
    - Slide breaks occur at --- Add more slide breaks as needed
    - See https://marp.app/guide/ for more details
-
-### Template ChangeLog
-- 0.1.1
-  - Added MARP presentation capabilities
-- 0.1.0
-  - Initial port from PPT
 --> 
 
 # Title
@@ -31,6 +35,7 @@ CREATING SLIDES/PRESENTATION
 **Associated Epic(s):**
 
 ---
+
 ### Instructions (DELETE ME)
 
 > - The UFO should be high level and focus on user experience
@@ -40,6 +45,7 @@ CREATING SLIDES/PRESENTATION
 ---
 
 ## Design Thinking
+<!-- _class: lead -->
 
 > **NOTE:** This section of the UFO is intended to replicate some of the design thinking goals. It should be high level and user focused.
 
@@ -48,6 +54,7 @@ CREATING SLIDES/PRESENTATION
 ### Technical Background
 
 > **NOTE:** Describe background information that will be useful to help understand how this feature will be used or integrated into the product. Use this section to cover existing concepts and the Key Concepts chart to cover new material that will need documentation.
+
 ---
 
 ### Problem Statement
@@ -75,8 +82,8 @@ CREATING SLIDES/PRESENTATION
 
 > **NOTE:** For each story in that will be delivered (this may go beyond the MVP, but for initial socialization only the MVP is required. If additional stories are to be delivered the UFO will need to be updated). This should focus on what someone would need to do to get this today. Note that even when adding something net new it is often possible to do it today, but the user experience won't be good. This is to ensure people understand what the user experience would be without this feature.
 
-
 ---
+
 ### To-Be
 
 > **NOTE:** For each story that has an As-Is provide the To-Be flow. This will be used to determine if the story is complete, if the to-be isn't achieved the function isn't ready. Note that the UFO should go through each As-Is followed by the equivalent To-Be, not list all As-Is's and then the To-Be's.
@@ -84,10 +91,6 @@ CREATING SLIDES/PRESENTATION
 ---
 
 ### Feature Design
-<style scoped>
-p  { font-size: 24px; }
-li  { font-size: 22px; }
-</style>
 
 > **NOTE:** Include as many charts as needed to depict the key design aspects of the Feature. This should be high level, pictures are more important than words. Do not attempt to go into depth to describe the function of existing components or depth of Feature design. The focus here is to describe key aspects of design usage, additions or changes to existing components and a high level design of new components. The focus is to identify all the major components involved in this Feature and their interactions. Describe the impact or expectations this Feature will have put on those components.  Things to consider:
 > - How does this work with all programming models such as OSGi Applications?
@@ -105,14 +108,12 @@ li  { font-size: 22px; }
 ---
 
 ## Externals Design
+<!-- _class: lead -->
 
 ---
 
 ### Communication
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
+
 > **NOTE:** How will the existence of this feature be communicated to users? Every feature will need some form of enablement and this section is where those considerations should be listed.  
 > At a minimum the feature should expect to be described in the applicable beta release blog post, and the GA blog post. However depending on the feature one or more of the following should be considered:
 >
@@ -129,17 +130,9 @@ li  { font-size: 21px; }
 > Make sure you contact the publication venue early to ensure that it is an appropriate place to put the content; you don't want to ask someone to publish something that is done only to discover they say no.
 
 ---
-### Communication
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
----
+
 ### Java APIs/SPIs
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
+
 > **NOTE:** Provide an initial Java API proposal for any product API or SPIs. When going through the implementation it may be discovered that the API needs to evolve, however the Java API/SPI needs to be designed with the developer who calls it in mind, rather than what is easiest for the implementation.  
 > Include and mark any third-party APIs/SPIs that this feature provides.  
 > New features should only expose the public APIs and functions that they actually require. They should not expose any additional public APIs and functions that happen to be used by the internal implementation.  
@@ -149,34 +142,30 @@ li  { font-size: 21px; }
 > - API - `io.openliberty.xxx`
 > - SPI - `io.openliberty.xxx.spi`
 > - Internal - `io.openliberty.xxx.internal`
+
 ---
+
 ### RESTful API Design
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
+
 > **NOTE:** If REST endpoints are being exposed by this feature you must document:  
 > (1) What they are (URL, HTTP verbs, HTTP headers, query / form parameters, payload formats, security domain, versioning model, resource design)  
 > (2) How they will be exposed (REST Handler, z/OS Connect, WAB, J2EE App, Http Whiteboard, etc)  
 > The goal is to have a discussion about the types of resources being exposed and how they are being exposed. The focus is on RESTful best practices. It is more important to focus on how the RESTful API is to be used, rather than every detail of the API. Focus on the 80% path.
+
 ---
 
 ### Admin / Config / Command Line
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
+
 > **NOTE:** Describe how to configure and administer this feature. Follow the Open Liberty config design practices, less configuration is better. Show examples of the configuration, relate back to the user stories earlier in this section. Focus on the 80% path and minimal configuration. If the config is only required by 10% of users, do we really need it?  
 > If the feature needs new command line utilities or script, this is where to include it.  
 > Should any component of this feature be "Pauseable", i.e. support being stopped and started when an administrator issues the "server pause" and "server resume" command? The pause command is intended to allow an administrator to pause and resume portions of the application server that handle external requests; for example, all of our HTTP listeners are pauseable. Also note that all "Pauseable" components are paused during the quiesce phase of server shutdown.  
 > If you're doing server.bat/server(.sh) changes, be aware the z/OS started task bypasses the script and uses other C code instead, so you should make sure you don't also need to make changes over there.  
 > For SSO features, make sure that any new attributes are consistent across the SSO features (SPNEGO, LTPA, OIDC, SAML, OAUTH, etc.).
+
 ---
+
 ### Developer Experience
-<style scoped>
-p { font-size: 24px; }
-li { font-size: 21px; }
-</style>
+
 > **NOTE:** Describe the experience of a developer using this feature. What changes are required in the developer tools for Liberty and/or tWAS? What about moving from development to deployment? How does this fit into a build/automated deploy pipeline? Are there any open source/third party packages that should integrate with this capability? Some things to consider:
 >
 > 1. Liberty Starter
@@ -202,8 +191,6 @@ li { font-size: 21px; }
 >    - Popular CI/CD/DevOps tools
 >
 > Note to System Testers: Since you are the first consumers of the feature, if you feel the Developer Experience is lacking, that is valuable input!
----
-### Developer Experience
 
 ---
 
@@ -233,8 +220,7 @@ li { font-size: 21px; }
 > - Is there Liberty configuration associated with the feature that is typically only known at the time the application is deployed? If so, identify the configuration. For example, hostname, port or credentials to connect to a remote resource.
 > - For Liberty configuration that is typically only known at the time the application is deployed, can the server tolerate being started without the configuration present? How would the configuration be parameterized such that it can be set at deployment time?
 > - Does the feature establish state while the server is starting or an application is starting which needs special consideration when restoring an application process into multiple running instances? For example, a unique ID (e.g. UUID) that must be unique for each running instance of the application.
----
-### InstantOn 
+
 ---
 
 ### Versionless Features
@@ -251,6 +237,8 @@ li { font-size: 21px; }
 ---
 
 ## Quality Assurance
+<!-- _class: lead -->
+
 ---
 
 ### Open Source Software
@@ -272,14 +260,9 @@ li { font-size: 21px; }
 >   - Anything else that may raise concerns?
 
 ---
-### Open Source Software
 
----
 ### Beta
-<style scoped>
-p { font-size: 22px; }
-li { font-size: 18px; }
-</style>
+
 > **NOTE:** All new content needs to be inaccessible in our GA image until the feature is 100% complete and feature focal approvals have been obtained.  
 > How will this content be shielded from our GA image?  
 
@@ -300,6 +283,7 @@ li { font-size: 18px; }
 > **NOTE:** Describe, in general, expectations around automated testing. Will a new FAT bucket be added to test this function, or will tests be added to an existing FAT bucket? If the latter, what bucket will the tests be added to?  
 > If any non-obvious scenarios need to be tested, describe them here. If there are any other special requirements for automated testing, describe them here.  
 > (This is to assist the developers who will write this function. We can assume that development teams will add sufficient testing for expected positive and negative code paths, but the UFO should describe any special requirements or unusual testing paths that are needed.)
+
 ---
 
 ### System Test Impact
@@ -308,6 +292,7 @@ li { font-size: 18px; }
 >
 > - Is System Test required before this feature can GA? If so, who is the System Test contact for this feature?
 > - Are there scenarios that should be added to the Never Ending System Test (NEST) environment, to help prevent regressions of this feature?
+
 ---
 
 ### Performance
@@ -321,7 +306,9 @@ li { font-size: 18px; }
 > - throughput
 >
 > Identify if you need to work with the performance team for any special performance data. If you expect a throughput impact provide an assessment of what the goal is. If the expected performance impact is high (more than 3% regression) indicate why that should not concern anyone.
+
 ---
+
 ### Platform / Cloud Considerations
 
 > **NOTE:** Does this feature have any special platform considerations, for example areas where it needs to work differently on z/OS or windows.  
@@ -330,12 +317,11 @@ li { font-size: 18px; }
 > List any platform specifics or requirements  
 > Describe any special considerations for running in Clouds environments, like Kubernetes, Cloud Foundry, WASaaS etc  
 > If this UFO is providing a new Liberty feature, the minimum Java version required by that feature should be stated in this section. The minimum Java level should be a LTS version of Java.
+
 ---
+
 ### Security
-<style scoped>
-p { font-size: 25px; }
-li  { font-size: 20px; }
-</style>
+
 > **NOTE:** What aspects of this feature could result in an avenue for a potential attacker to exploit. For example if creating a REST API to access files on the file system how do you ensure the API can't be used to access /etc/passwd or /etc/shadow? Try to think about the following:  
 > Authentication and authorization  
 > Hardening guidelines  
@@ -360,36 +346,29 @@ li  { font-size: 20px; }
 > - Mbeans
 > - Systems management operations
 > - UI Changes
----
-### Security
-
 
 ---
+
 ### Serviceability
-<style scoped>
-p { font-size: 25px; }
-li  { font-size: 20px; }
-</style>
+
 > **NOTE:** The primary purpose of this section is to identify the most likely problems users will see and identify how to enable them to diagnose and solve those problems without needing to ask for formal support.  
 > Indicate what team will handle service for downstream products that use this feature.  
 > State the most likely problems a customer will encounter. For each state how the customer can recognize and recover without contacting IBM for support.  
 > What diagnostics will be added to aid in problem determination? Diagnostic frameworks in WAS include trace, logging, ffdc dumpables (tWAS) and introspectors (Liberty). Note that it is not acceptable to expect users to use FFDC or trace to diagnose problems.  
 > Is this feature usable by just enabling the feature in server.xml? If not, what messages will be presented to the user to guide them to a basic working configuration? For example, a URL to a guide or Doc page.
+
 ---
+
 ### Accessibility Compliance
-<style scoped>
-p { font-size: 22px; }
-li  { font-size: 21px; }
-</style>
+
 > **NOTE:** Does this feature have any user interfaces (UIs) with which an end user is expected to interact? UI is broadly defined to include Web, Software, Commandline, and Documentation (including Javadocs). If so, then list which UIs are included in this feature. All end user UIs are required to test for accessibility compliance. If not, then state that the feature has no UI, and does not require accessibility verification testing.  
 > Does this feature generate output that has an end-user user interface?  
 > If so, the output generated by this feature also must be tested for accessibility compliance. It is important to ensure that the end user (the person providing input to the feature for the generated output) has an opportunity to make the output UI accessibility compliant, even if we don't require that they do so. For instance, if the user can include a picture in a generated web page, the picture is required to have alternative text that describes the content of the image. To pass accessibility requirements, the user should have an opportunity to add alternative text. Accessibility testing would fail if the user does not have opportunity to include alternative text for the image. However, accessibility testing would pass if the end user omits the alternative text in their generated output (because they did have the opportunity to do so). And, accessibility would still pass if the user misrepresents the content of the image (e.g., provides alternative text stating the image is an apple, but the image is actually of a banana).
+
 ---
+
 ### Migration Impact
-<style scoped>
-p { font-size: 21px; }
-li  { font-size: 20px; }
-</style>
+
 > **NOTE:** Describe, in general details, known migration concerns for any existing customers and stack products when releasing this feature. Potential impacts could include: programming interfaces, behavior changes, administration scripts, user applications, or default values.  
 > Examples of migration concerns:
 >
@@ -399,5 +378,7 @@ li  { font-size: 20px; }
 > - Is your feature dependent on other features? If a customer upgrades to your new feature, do they need to upgrade the dependent features?
 >
 > The Migration Tools offer a feature list to the customer based on the APIs used in an application. For example, currently, if the tool finds `javax.persistence` or eclipselink packages, it adds the jpa feature to the feature list. Are there any new packages the migration tools should be associating with your new feature?
+
 ---
+
 ## End of UFO

@@ -72,7 +72,7 @@ Three user stories, each tied to an explicit `<wsAtomicTransaction/>` configurat
 Cover each story in turn; invite the room to challenge whether the default of "always" truly covers their migration use case before moving on.
 :::
 
-# As-Is: [Unconditional Propagation]{.deleted} [Propagation always on by default]{.added}
+# [As-Is: Unconditional Propagation]{.deleted} [As-Is: Propagation always on by default]{.added}
 
 - With `wsAtomicTransaction-1.2` enabled, any outbound JAX-WS call during a JTA transaction injects WS-AT headers
 - Non-transactional / 3rd-party endpoints reject unknown headers or fail schema validation
@@ -118,7 +118,7 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   newlbl/.style={font=\sffamily\scriptsize\bfseries, color=ufocvdblue}]
 
   % All nodes centred on x=0, evenly spaced vertically
-  \node[box]    (app)      at (0,  0)    {JAX-WS [/ Jakarta]{.added} Outbound Client Request (Inside Global Transaction)};
+  \node[box]    (app)      at (0,  0)    {JAX-WS \ufoAdd{/ Jakarta} Outbound Client Request (Inside Global Transaction)};
   \node[chk]    (feat)     at (0, -1.2)  {\texttt{wsAtomicTransaction-1.2} feature configured?};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (cfg)      at (0, -2.4)  {Check Config: \texttt{propagation} setting};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (check)    at (0, -3.6)  {Target WSDL contains \texttt{ATAssertion}?};
@@ -129,7 +129,7 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \draw[line] (app)      -- (feat);
   \draw[line] (feat)     -- node[right, lbl] {Yes / configured} (cfg);
   \draw[newline] (cfg)   -- node[right, newlbl] {conditional} (check);
-  \draw[newline] (check) -- node[right, newlbl] {[Match]{.deleted} [Yes]{.added}} (propagate);
+  \draw[newline] (check) -- node[right, newlbl] {\ufoDel{Match} Yes} (propagate);
   \draw[line] (propagate)-- (send);
 
   % Left side (No outermost, always inner — no crossings):
@@ -158,6 +158,17 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \node[newlbl, anchor=south west] at ([xshift=3pt]check.east) {No};
 
 \end{tikzpicture}
+\ufoTikzChangebars{%
+  % Bar 1: alongside the top node (app) — / Jakarta added
+  % Node centre ~24.6mm from top; bar spans the node height (~5mm)
+  \draw[ufochanged, line width=2.5pt, line cap=round]
+    ([xshift=0.85cm, yshift=-2.2cm] current page.north west)
+    -- ([xshift=0.85cm, yshift=-2.7cm] current page.north west);
+  % Bar 2: alongside the Match→Yes arrow label (~44.9mm from top)
+  \draw[ufochanged, line width=2.5pt, line cap=round]
+    ([xshift=0.85cm, yshift=-4.3cm] current page.north west)
+    -- ([xshift=0.85cm, yshift=-4.7cm] current page.north west);
+}
 \end{center}
 
 ::: notes

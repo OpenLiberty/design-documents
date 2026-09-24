@@ -17,12 +17,13 @@
 --
 -- Inline changes on a single run of text:
 --
---   [added text]{.added}      → \ufoAdded{added text}
---                                (light magenta highlight box, defined in beamertheme.tex)
+--   [added text]{.added}      → \ufoAdd{added text}
+--                                (light magenta highlight box in review builds,
+--                                 plain text in final builds; defined in beamertheme.tex)
 --
---   [deleted text]{.deleted}  → \sout{deleted text}
---                                (strikethrough via ulem; no margin bar — single-line
---                                 \cbstart/\cbend produces zero-height bars)
+--   [deleted text]{.deleted}  → \ufoDel{deleted text}
+--                                (strikethrough in review builds, silent in final builds;
+--                                 defined in beamertheme.tex)
 --
 -- \cbstart / \cbend are still used at block level (Div handler above).
 
@@ -41,11 +42,11 @@ function Div(el)
   if el.classes:includes("deleted") then
     local open  = pandoc.RawBlock("latex", "\\begin{ufoDeletedBlock}")
     local close = pandoc.RawBlock("latex", "\\end{ufoDeletedBlock}")
-    -- Wrap the inlines of each Plain/Para item directly in \sout{} raw LaTeX.
+    -- Wrap the inlines of each Plain/Para item directly in \ufoDel{} raw LaTeX.
     -- (Creating a {.deleted} Span here and relying on the Span handler below
     -- does not work — the Div handler fires before Span in the same pass.)
     local function strikeitem(iblock)
-      local newInlines = {pandoc.RawInline("latex", "\\sout{")}
+      local newInlines = {pandoc.RawInline("latex", "\\ufoDel{")}
       for _, i in ipairs(iblock.content) do
         table.insert(newInlines, i)
       end
@@ -83,10 +84,7 @@ end
 
 function Span(el)
   if el.classes:includes("added") then
-    -- Highlight added text with a light magenta colorbox.
-    -- \cbstart/\cbend produced zero-height margin bars for single-line spans
-    -- so we use \ufoAdded{} for a visible inline highlight instead.
-    local open  = pandoc.RawInline("latex", "\\ufoAdded{")
+    local open  = pandoc.RawInline("latex", "\\ufoAdd{")
     local close = pandoc.RawInline("latex", "}")
     local inlines = {open}
     for _, i in ipairs(el.content) do
@@ -97,8 +95,7 @@ function Span(el)
   end
 
   if el.classes:includes("deleted") then
-    -- Strike through deleted text; no margin bar (same zero-height issue).
-    local open  = pandoc.RawInline("latex", "\\sout{")
+    local open  = pandoc.RawInline("latex", "\\ufoDel{")
     local close = pandoc.RawInline("latex", "}")
     local inlines = {open}
     for _, i in ipairs(el.content) do

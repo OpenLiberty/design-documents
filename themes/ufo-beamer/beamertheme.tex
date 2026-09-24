@@ -57,12 +57,39 @@
 \usepackage[normalem]{ulem}   % \sout — normalem keeps \emph as italic
 \usepackage{zref-savepos}     % \zsavepos — records absolute y position on page
 
-% \ufoAdded{text} — inline highlight for added/changed text.
-% Uses a very light magenta tint (ufochanged!15) with tight padding so the
-% highlight is visible without disrupting line spacing.
-% \fboxsep controls the padding; saving/restoring avoids side-effects.
-\newcommand{\ufoAdded}[1]{%
-  {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
+% \ufoAdd{text} — inline highlight for added/changed text.
+% In changebar/review builds (\ifufochanges): light magenta tint colorbox.
+% In final builds: renders the text plainly with no highlight.
+% Safe to use inside raw LaTeX blocks (e.g. TikZ nodes) and Beamer frame
+% titles without per-call guards. \DeclareRobustCommand makes it robust
+% across Beamer's fragile-frame write/re-read cycle.
+\DeclareRobustCommand{\ufoAdd}[1]{%
+  \ifufochanges
+    \ifufoincbblock
+      {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
+    \else
+      \cbline{{\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}}%
+    \fi
+  \else
+    #1%
+  \fi
+}
+
+% \ufoDel{text} — inline strikethrough for deleted/removed text.
+% In changebar/review builds (\ifufochanges): struck-through text via \sout{},
+% with a single-line margin changebar via \cbline.
+% In final builds: silently drops the text entirely.
+% Safe to use inside raw LaTeX blocks (e.g. TikZ nodes) and Beamer frame
+% titles. \DeclareRobustCommand survives Beamer's fragile-frame cycle and
+% TikZ's token pre-scanner.
+\DeclareRobustCommand{\ufoDel}[1]{%
+  \ifufochanges
+    \ifufoincbblock
+      \sout{#1}%
+    \else
+      \cbline{\sout{#1}}%
+    \fi
+  \fi
 }
 
 % CVD-safe changebar colour: IBM Magenta-50 #EE538B
@@ -73,25 +100,50 @@
 % Counter to give each changebar a unique label pair
 \newcounter{cbcount}
 
+% Flag: true when inside a block-level \cbstart..\cbend or ufoDeletedBlock,
+% so \ufoAdd/\ufoDel suppress their inline \cbline (the block bar covers them).
+\newif\ifufoincbblock
+\ufoincbblockfalse
+
 \newcommand{\cbstart}{%
   \stepcounter{cbcount}%
   \zsavepos{cb-start-\thecbcount}%
+  \ufoincbblocktrue
 }
 
 \newcommand{\cbend}{%
+  \ufoincbblockfalse
   \zsavepos{cb-end-\thecbcount}%
   \edef\cbcurrent{\thecbcount}%
   % Compute y coordinates in pt: zref stores sp (1pt = 65536sp)
   \edef\cbystart{\the\dimexpr\zposy{cb-start-\cbcurrent} sp\relax}%
   \edef\cbyend{\the\dimexpr\zposy{cb-end-\cbcurrent} sp\relax}%
   \begin{tikzpicture}[remember picture, overlay]
-    % Draw a red vertical rule at x = 0.85cm from the left paper edge,
+    % Draw a vertical rule at x = 0.85cm from the left paper edge,
     % spanning from the \cbend position (bottom) to the \cbstart position (top).
     \draw[ufochanged, line width=2.5pt, line cap=round]
       ([xshift=0.85cm, yshift=\cbyend] current page.south west)
       --
       ([xshift=0.85cm, yshift=\cbystart] current page.south west);
   \end{tikzpicture}%
+}
+
+% \cbline{content} — single-line changebar for inline \ufoAdd{} and \ufoDel{} spans.
+% Records the current y position, draws a fixed-height bar (22pt, baseline-centred)
+% at the standard changebar x, then typesets the content.
+% Takes one argument so the zsavepos measurement is taken before the content renders.
+\newcommand{\cbline}[1]{%
+  \stepcounter{cbcount}%
+  \zsavepos{cb-inline-\thecbcount}%
+  \edef\cbcurrent{\thecbcount}%
+  \edef\cbymid{\the\dimexpr\zposy{cb-inline-\cbcurrent} sp\relax}%
+  \begin{tikzpicture}[remember picture, overlay]
+    \draw[ufochanged, line width=2.5pt, line cap=round]
+      ([xshift=0.85cm, yshift=\dimexpr\cbymid-9pt\relax] current page.south west)
+      --
+      ([xshift=0.85cm, yshift=\dimexpr\cbymid+13pt\relax] current page.south west);
+  \end{tikzpicture}%
+  #1%
 }
 
 % UFO template colours
@@ -431,6 +483,22 @@
 
 \newcommand{\ufochangekey}{\ufochangestrue}
 
+% \ufoTikzChangebars{bars} — draws changebar rules in a standalone overlay
+% tikzpicture, conditional on \ifufochanges. The \ifufochanges..\fi pair lives
+% inside this named command so it is never seen by TikZ's or Beamer's token
+% pre-scanners.
+% Usage (in a raw latex block, after \end{tikzpicture}):
+%   \ufoTikzChangebars{
+%     \draw[ufochanged, line width=2.5pt, line cap=round] ... -- ...;
+%   }
+\DeclareRobustCommand{\ufoTikzChangebars}[1]{%
+  \ifufochanges
+    \begin{tikzpicture}[remember picture, overlay]
+      #1
+    \end{tikzpicture}%
+  \fi
+}
+
 \newcommand{\ufochangekeydraw}{%
   \begin{tikzpicture}[remember picture, overlay]
 
@@ -529,7 +597,7 @@
     \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
           text=ufonavydark]
       at ([xshift=-1.45cm, yshift=-0.57cm]leg.center)
-      {\sout{removed text}};
+      {\ufoDel{removed text}};
 
   \end{tikzpicture}%
 }

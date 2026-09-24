@@ -323,25 +323,44 @@
 % Pixel measurement: frametitle top ≈ 13.45mm from slide top edge → vskip 1.35cm
 % Paper is 254mm × 142.875mm (Beamer screen geometry).
 % \vskip1.35cm puts text top at 142.875mm - 13.5mm = 129.375mm from page bottom.
-% 40pt font ≈ 14.1mm; baseline at ~115.3mm, descenders to ~112mm, cap-top ~130mm.
-% Bar: 111mm (below baseline) → 131mm (above cap), centred on the title row.
-\setbeamertemplate{frametitle}{%
-  \nointerlineskip
-  \vskip1.35cm%
-  {\ufoinframetitletrue\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
-  \ufoinframetitlefalse
-  % If any \ufoAdd or \ufoDel fired inside the title, draw a fixed-position
-  % changebar at the known frametitle y.  Uses hardcoded coordinates because
-  % \zsavepos is unreliable during frametitle typesetting.
+%
+% Changebar for changed titles: \zsavepos is unreliable *inside* the frametitle
+% typesetting group, but is reliable immediately *after* it (we are back in normal
+% vertical list flow).  Strategy:
+%   \cbframetitlestart — called just before the title group; saves the y position
+%                        at the TOP of the title (via \zsavepos) and sets the
+%                        \ifufoinframetitle flag.
+%   \cbframetitleend   — called just after the title group closes; saves the y
+%                        position at the BOTTOM of the title and draws the bar if
+%                        \ifufotitlechanged was set.
+% Both use the dedicated \cbblockcount / \ufocbstartsnap mechanism so they are
+% immune to \cbline counter increments.
+\newcommand{\cbframetitlestart}{%
+  \stepcounter{cbblockcount}%
+  \ufocbstartsnap=\value{cbblockcount}%
+  \zsavepos{cb-title-\the\ufocbstartsnap-start}%
+}
+\newcommand{\cbframetitleend}{%
+  \zsavepos{cb-title-\the\ufocbstartsnap-end}%
   \ifufotitlechanged
+    \edef\cbystart{\the\dimexpr\zposy{cb-title-\the\ufocbstartsnap-start} sp\relax}%
+    \edef\cbyend{\the\dimexpr\zposy{cb-title-\the\ufocbstartsnap-end} sp\relax}%
     \begin{tikzpicture}[remember picture, overlay]
       \draw[ufochanged, line width=2.5pt, line cap=round]
-        ([xshift=0.85cm, yshift=111mm] current page.south west)
+        ([xshift=0.85cm, yshift=\dimexpr\cbyend-3pt\relax] current page.south west)
         --
-        ([xshift=0.85cm, yshift=131mm] current page.south west);
+        ([xshift=0.85cm, yshift=\dimexpr\cbystart+3pt\relax] current page.south west);
     \end{tikzpicture}%
     \global\ufotitlechangedfalse
   \fi
+}
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \vskip1.35cm%
+  \cbframetitlestart
+  {\ufoinframetitletrue\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
+  \ufoinframetitlefalse
+  \cbframetitleend
   \vskip0.2cm%
 }
 

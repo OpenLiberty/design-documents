@@ -121,15 +121,15 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \node[box]    (app)      at (0,  0)    {JAX-WS \ufoAdd{/ Jakarta} Outbound Client Request (Inside Global Transaction)};
   \node[chk]    (feat)     at (0, -1.2)  {\texttt{wsAtomicTransaction-1.2} feature configured?};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (cfg)      at (0, -2.4)  {Check Config: \texttt{propagation} setting};
-  \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (check)    at (0, -3.6)  {Target WSDL contains \texttt{ATAssertion}?};
+  \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (wsatcheck)    at (0, -3.6)  {Target WSDL contains \texttt{ATAssertion}?};
   \node[action] (propagate)at (0, -4.8)  {Attach WS-AT Header ({\footnotesize\texttt{wscoor:CoordinationContext}})};
   \node[box]    (send)     at (0, -6.0)  {Transmit HTTP / SOAP Request to Target Endpoint};
 
   % Vertical happy path
   \draw[line] (app)      -- (feat);
   \draw[line] (feat)     -- node[right, lbl] {Yes / configured} (cfg);
-  \draw[newline] (cfg)   -- node[right, newlbl] {conditional} (check);
-  \draw[newline] (check) -- node[right, newlbl] {\ufoDel{Match} Yes} (propagate);
+  \draw[newline] (cfg)   -- node[right, newlbl] {conditional} (wsatcheck);
+  \draw[newline] (wsatcheck) -- node[right, newlbl] {\ufoDel{Match} Yes} (propagate);
   \draw[line] (propagate)-- (send);
 
   % Left side (No outermost, always inner — no crossings):
@@ -154,21 +154,22 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \node[newlbl, anchor=south west] at ([xshift=3pt]cfg.east) {never};
 
   % No: inner rail — arrives above never's inbound level
-  \draw[newline] (check.east) -- ++(1.4,0) -- ++(0,-2.25) -- ([yshift=0.15cm]send.east);
-  \node[newlbl, anchor=south west] at ([xshift=3pt]check.east) {No};
+  \draw[newline] (wsatcheck.east) -- ++(1.4,0) -- ++(0,-2.25) -- ([yshift=0.15cm]send.east);
+  \node[newlbl, anchor=south west] at ([xshift=3pt]wsatcheck.east) {No};
 
 \end{tikzpicture}
+% Changebars drawn via \ufoTikzChangebars — the \ifufochanges..\fi pair lives
+% inside that named command and is never seen by TikZ's or Beamer's token
+% pre-scanners. Node anchors resolve correctly because remember picture is set
+% on both the main tikzpicture above and the overlay one inside the command.
 \ufoTikzChangebars{%
-  % Bar 1: alongside the top node (app) — / Jakarta added
-  % Node centre ~24.6mm from top; bar spans the node height (~5mm)
+  % Bar 1: alongside 'app' node (/ Jakarta added)
   \draw[ufochanged, line width=2.5pt, line cap=round]
-    ([xshift=0.85cm, yshift=-2.2cm] current page.north west)
-    -- ([xshift=0.85cm, yshift=-2.7cm] current page.north west);
-  % Bar 2: alongside the Match→Yes arrow label (~44.9mm from top)
+    ([xshift=-0.5cm]app.north west) -- ([xshift=-0.5cm]app.south west);
+  % Bar 2: alongside 'wsatcheck' node (Match→Yes renamed)
   \draw[ufochanged, line width=2.5pt, line cap=round]
-    ([xshift=0.85cm, yshift=-4.3cm] current page.north west)
-    -- ([xshift=0.85cm, yshift=-4.7cm] current page.north west);
-}
+    ([xshift=-0.5cm]wsatcheck.north west) -- ([xshift=-0.5cm]wsatcheck.south west);
+}%
 \end{center}
 
 ::: notes

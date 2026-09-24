@@ -29,21 +29,10 @@ WS-AT coordinates distributed transactions across JAX-WS and [Jakarta XML Web Se
 
 - Enabling `wsAtomicTransaction-1.2` causes WS-AT context to propagate on **all outbound requests** in a global transaction, even if the target lacks WS-AT assertions
 - Calls to non-transactional / 3rd-party services fail when WS-AT headers are rejected
-- [**Desired outcome**:]{.deleted} [Need to allow]{.added} Allow transactions to be propagated to only those web services that express a WS-AT policy assertion in their WSDL:
-  ```xml
-  <wsp:Policy wsu:Id="WSAT_Policy">
-      <wsat:ATAssertion wsp:Optional="false"/>
-  </wsp:Policy>
-  ```
 - Retain unconditional propagation as the default for zero-migration compatibility
 
 ::: notes
-Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists. The [desired outcome is]{.deleted} [need is for]{.added} policy-driven propagation based on the target service's WSDL assertion.
-
-XML namespace prefixes used in the WSDL snippet:
-- wsp: WS-Policy namespace (http://schemas.xmlsoap.org/ws/2004/09/policy or http://www.w3.org/ns/ws-policy), defining policy containers and assertion attributes like wsp:Optional.
-- wsu: WS-Security Utility namespace (http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd), providing the wsu:Id attribute used to identify and attach policy elements.
-- wsat: WS-AtomicTransaction namespace (http://docs.oasis-open.org/ws-tx/wsat/2006/06), specifying the ATAssertion element.
+Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists.
 :::
 
 # Interested Users

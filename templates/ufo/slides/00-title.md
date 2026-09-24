@@ -1,9 +1,8 @@
 ---
 title: "FEATURE NAME"
 architect: "Jane Architect"
-# Date is auto-generated from git — do not add a ufo-date field here.
 epics: "OL-12345, CL-67890, MORE-111"
-date: ""
+date: ""   # left blank — suppresses pandoc's auto-date; source date comes from git
 ---
 
 # Instructions *(DELETE ME)*

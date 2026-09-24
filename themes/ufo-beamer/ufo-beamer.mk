@@ -38,8 +38,26 @@ TITLE_SLUG := $(shell grep '^title:'     $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]
                 | tr '[:upper:]' '[:lower:]' \
                 | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$$//')
 ARCHITECT  := $(shell grep '^architect:' $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
-DATE       := $(shell grep '^ufo-date:'  $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
 EPICS      := $(shell grep '^epics:'     $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
+
+# Error if ufo-date is still present — date is now auto-generated from git.
+ifneq ($(shell grep '^ufo-date:' $(TITLE_MD)),)
+  $(error $(TITLE_MD) contains a 'ufo-date:' field. Remove it — the date is now auto-generated from git.)
+endif
+
+# Git-derived date, sha, and draft state.
+# If any source file has uncommitted changes: draft mode, today's date, ???????? sha.
+# Otherwise: date and sha from the last commit touching the sources.
+_GIT_DIRTY := $(shell git status --porcelain $(SOURCES) 2>/dev/null)
+ifneq ($(_GIT_DIRTY),)
+  GIT_DATE  := $(shell date '+%Y-%m-%d')
+  GIT_SHA   := ????????
+  GIT_DRAFT := true
+else
+  GIT_DATE  := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d' -- $(SOURCES) 2>/dev/null)
+  GIT_SHA   := $(shell git log -1 --format=%h -- $(SOURCES) 2>/dev/null)
+  GIT_DRAFT := false
+endif
 
 # Validate epics, then derive slug and LaTeX links via epics.sh
 _EPIC_VALIDATE := $(shell $(EPICS_SH) validate "$(EPICS)" 2>&1 || true)
@@ -61,7 +79,8 @@ PDF_SPEAKERNOTES = $(OUTPUT_DIR)/$(PDF_STEM)-speakernotes.pdf
 
 VARS_TEX = $(BUILD_DIR)/ufo-vars.tex
 
-.PHONY: slides all notes handout speakernotes clean
+# VARS_TEX must be regenerated on every build so the git dirty check is fresh.
+.PHONY: slides all notes handout speakernotes clean $(VARS_TEX)
 
 slides: $(PDF_SLIDES)
 
@@ -81,12 +100,15 @@ speakernotes: $(PDF_SPEAKERNOTES)
 $(VARS_TEX): | $(BUILD_DIR)
 	{ \
 	  printf '\\graphicspath{{images/}{%s/}}\n' '$(THEME_DIR)'; \
+	  printf '\\ufoGitSha{%s}\n' '$(GIT_SHA)'; \
+	  printf '\\ufoGitDate{%s}\n' '$(GIT_DATE)'; \
+	  $(if $(filter true,$(GIT_DRAFT)),printf '\\ufodrafttrue\n';) \
 	  $(if $(EXTRA_VARS_TEX),printf '%s\n' '$(EXTRA_VARS_TEX)';) \
 	  printf '\\AtEndPreamble{\n'; \
 	  printf '  \\csname Hy@implicittrue\\endcsname\n'; \
 	  printf '  \\hypersetup{colorlinks=true,urlcolor=ufolink}\n'; \
-	  printf '  \\protected\\def\\insertauthor{\\parbox{0.55\\paperwidth}{\\raggedright Architect: %s \\\\[4pt]Date: %s \\\\[4pt]Associated Epics: %s}}\n' \
-	    '$(ARCHITECT)' '$(DATE)' '$(EPICS_LINKS)'; \
+	  printf '  \\protected\\def\\insertauthor{\\parbox{0.55\\paperwidth}{\\raggedright Architect: %s \\\\[4pt]Date: %s \\\\[4pt]Commit: %s \\\\[4pt]Associated Epics: %s}}\n' \
+	    '$(ARCHITECT)' '$(GIT_DATE)' '$(GIT_SHA)' '$(EPICS_LINKS)'; \
 	  printf '}\n'; \
 	} > $@
 

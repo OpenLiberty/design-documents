@@ -271,14 +271,17 @@
           yshift=-0.48\paperheight] at (current page.north west) {%
       \begin{minipage}{0.62\paperwidth}
         \raggedright
-        \usebeamerfont{title}\titlefont\color{ufonavydark}\inserttitle
+        \usebeamerfont{title}\titlefont\color{ufonavydark}%
+        \inserttitle\ufodraftbadge%
       \end{minipage}%
     };
+    % ── Draft instruction (shown only when dirty) ──────────────────────────
+    \ufodraftwarning%
     \node[anchor=south west, xshift=0.3cm, yshift=0.25cm]
       at (current page.south west) {%
       \fontsize{15}{17}\selectfont\color{ufonavydark}%
-      Upcoming Feature Overview (UFO) Template V59 ---
-      https://github.ibm.com/websphere/ufo/tree/v59/template%
+      Upcoming Feature Overview (UFO) Template ---
+      https://github.com/OpenLiberty/design-documents/tree/ufo-beamer%
     };
   \end{tikzpicture}%
   % ── Layer 2: author block as normal TeX flow (outside TikZ for live \href) ───
@@ -361,6 +364,37 @@
 % This block is emitted by Pandoc before \frame{\titlepage}, so the flag is
 % set in time for the title template to read it.
 %
+% ── Draft mode ────────────────────────────────────────────────────────────────
+% \ufodrafttrue is set by the Makefile when sources have uncommitted changes.
+% \ufoGitSha{} holds the short commit hash (or ???????? when dirty).
+% \ufoGitDate{} holds the commit date (or today's date when dirty).
+% Both are injected into build/ufo-vars.tex by ufo-beamer.mk.
+\newif\ifufodraft
+\ufodraftfalse
+\newcommand{\ufoGitSha}[1]{\def\ufoGitShaValue{#1}}
+\newcommand{\ufoGitDate}[1]{\def\ufoGitDateValue{#1}}
+% Defaults so the theme compiles even without ufo-vars.tex injection:
+\ufoGitSha{unknown}
+\ufoGitDate{}
+
+% Wrappers called from \setbeamertemplate — bare \if..\fi inside Beamer's
+% template token scanner causes "Too many }'s". Named commands avoid this.
+\newcommand{\ufodraftbadge}{%
+  \ifufodraft\textcolor{ufochanged}{\bfseries\ [DRAFT]}\fi%
+}
+\newcommand{\ufodraftwarning}{%
+  \ifufodraft%
+    % Full-width banner at the very top of the slide, above the logo.
+    \fill[ufochanged] (current page.north west)
+      rectangle ([yshift=-0.055\paperheight]current page.north east);
+    \node[anchor=center,
+          yshift=-0.0275\paperheight] at (current page.north) {%
+      \fontsize{11}{13}\selectfont\bfseries\color{white}%
+      DRAFT — Uncommitted changes. Commit your slides to generate a final copy.%
+    };%
+  \fi%
+}
+
 \newif\ifufochanges
 \ufochangesfalse
 

@@ -25,7 +25,7 @@ The changebar appears only alongside those two lines.
 
 ::: changed
 - **Opt-In** — `<acme-gizmo propagation="conditional"/>`:
-  Gizmo headers attached only to doodads that advertise `<acme:GizmoSupport>` in their descriptor
+  Gizmo headers attached only to [`<acme:GizmoSupport>`]{.added} doodads
 :::
 
 - **Zero-Migration** — `<acme-gizmo propagation="always"/>`: existing widgets unaffected
@@ -33,9 +33,10 @@ The changebar appears only alongside those two lines.
 
 
 ::: notes
-Example 2: inline {.added} spans produce zero-height bars when the added text sits
-on a single line. Use ::: changed at bullet granularity instead — the bar spans the
-full bullet height and is reliably visible.
+Example 2: {.added} inside a ::: changed block — the colorbox highlights the new
+inline text while the margin bar marks the whole bullet as changed. For a whole new
+bullet use ::: changed alone; for a word or phrase within an existing bullet combine
+both.
 :::
 
 # Ex 3: Inline deletion

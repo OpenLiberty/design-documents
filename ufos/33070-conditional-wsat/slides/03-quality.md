@@ -80,9 +80,13 @@ Performance impact is negligible since CXF caches effective endpoint policies up
 
 - **Full Cross-Platform Support**:
   - Runs uniformly across all supported Open Liberty operating systems: Linux (x86_64, ppc64le, s390x), macOS, Windows, and z/OS
-  - Fully verified across IBM Semeru Runtimes and Eclipse Temurin Java SE 11, 17, and 21 LTS releases
+  - [Compatible with the same Java SE runtimes supported by the underlying JAX-WS / Jakarta XML Web Services features (Java SE 8+, subject to the feature's platform matrix)]{.added}
 - **Cloud & Container Ready**:
   - Stateless outbound evaluation excels in Kubernetes, Red Hat OpenShift, and containerized microservice architectures
+
+::: changed
+- **Equal support for JAX-WS and Jakarta XML Web Services** across all supported Java SE versions
+:::
 
 ::: notes
 Operates identically across all supported OS platforms and Java LTS levels, with complete container and cloud platform portability.
@@ -113,6 +117,19 @@ Security is strengthened by preventing unintentional leaking of internal transac
 Serviceability provides clear trace entries indicating whether WS-AT was enabled or bypassed based on target endpoint WSDL policy.
 :::
 
+::: changed
+# InstantOn
+
+- **Potentially InstantOn Compatible**:
+  - WS-AT policy resolution structures are stateless per endpoint, but WS-AT is not currently supported in InstantOn; this feature would be compatible with InstantOn checkpoint/restore cycles if/when WS-AT support is added
+- **Dynamic Configuration Tolerance**:
+  - Dynamic updates to `propagation` take effect immediately on subsequent outbound requests without application restarts
+
+::: notes
+The feature establishes no static state that conflicts with InstantOn. However, WS-AT itself is not yet supported in InstantOn (on the backlog). The propagation attribute and policy resolution logic are designed to be compatible with InstantOn checkpoint/restore once WS-AT is ported.
+:::
+:::
+
 # Accessibility Compliance
 
 - **N/A — No User Interface**:
@@ -130,6 +147,10 @@ This slide is marked N/A as Conditional WS-AT is strictly a backend runtime capa
   - No existing `server.xml` or application needs modification upon upgrade
 - **Zero-Friction Modernization from tWAS**:
   - Setting `propagation="conditional"` restores tWAS-style endpoint isolation for mixed topologies without code changes
+
+::: changed
+  - **MoRE recommendation**: when migrating from tWAS, set `propagation="conditional"` — this most closely [matches]{.deleted} [mirrors]{.added} tWAS's opt-in, per-endpoint propagation model
+:::
 
 ::: notes
 Provides a major migration win by allowing legacy tWAS workloads using mixed transactional/non-transactional web services to run on Liberty without application code refactoring.

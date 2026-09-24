@@ -17,15 +17,19 @@ This section establishes the user-centric motivation, target personas, migration
   - Outbound WS-AT behavior is governed by the presence of `wsAtomicTransaction-1.2` and configured via `<wsAtomicTransaction/>`
   - Unconditional propagation is the legacy default provided by `defaultInstances.xml`
 
+::: changed
+  - Compatible with both **JAX-WS 2.2** (`javax.xml.ws.*`) and **Jakarta XML Web Services 3.0+** (`jakarta.xml.ws.*`) — equal support for both programming models
+:::
+
 ::: notes
-WS-AT coordinates distributed transactions across JAX-WS endpoints. While tWAS allowed per-endpoint policy set attachment, Open Liberty's wsAtomicTransaction-1.2 feature historically operated globally across all JAX-WS outbound calls.
+WS-AT coordinates distributed transactions across JAX-WS and [Jakarta XML Web Services]{.added} endpoints. While tWAS allowed per-endpoint policy set attachment, Open Liberty's wsAtomicTransaction-1.2 feature historically operated globally across all JAX-WS [/ Jakarta XML Web Services]{.added} outbound calls.
 :::
 
 # Problem Statement
 
 - Enabling `wsAtomicTransaction-1.2` causes WS-AT context to propagate on **all outbound requests** in a global transaction, even if the target lacks WS-AT assertions
 - Calls to non-transactional / 3rd-party services fail when WS-AT headers are rejected
-- **Desired outcome**: Allow transactions to be propagated to only those web services that express a WS-AT policy assertion in their WSDL:
+- [**Desired outcome**:]{.deleted} [Need to allow]{.added} Allow transactions to be propagated to only those web services that express a WS-AT policy assertion in their WSDL:
   ```xml
   <wsp:Policy wsu:Id="WSAT_Policy">
       <wsat:ATAssertion wsp:Optional="false"/>
@@ -34,7 +38,7 @@ WS-AT coordinates distributed transactions across JAX-WS endpoints. While tWAS a
 - Retain unconditional propagation as the default for zero-migration compatibility
 
 ::: notes
-Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists. The desired outcome is policy-driven propagation based on the target service's WSDL assertion.
+Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists. The [desired outcome is]{.deleted} [need is for]{.added} policy-driven propagation based on the target service's WSDL assertion.
 
 XML namespace prefixes used in the WSDL snippet:
 - wsp: WS-Policy namespace (http://schemas.xmlsoap.org/ws/2004/09/policy or http://www.w3.org/ns/ws-policy), defining policy containers and assertion attributes like wsp:Optional.
@@ -75,17 +79,17 @@ Three user stories, each tied to an explicit `<wsAtomicTransaction/>` configurat
 Cover each story in turn; invite the room to challenge whether the default of "always" truly covers their migration use case before moving on.
 :::
 
-# As-Is: Unconditional Propagation
+# [As-Is: Unconditional Propagation]{.deleted} [Propagation always on by default]{.added}
 
 - With `wsAtomicTransaction-1.2` enabled, any outbound JAX-WS call during a JTA transaction injects WS-AT headers
 - Non-transactional / 3rd-party endpoints reject unknown headers or fail schema validation
-- Developers must manually modify application source code:
+- Developers must manually modify application source code [`**to stop propagation**`]{.added}:
   - Explicitly obtain `TransactionManager` / `UserTransaction`
   - Suspend transaction prior to invocation, then resume afterwards
   - Handle complex failure and rollback paths manually
 
 ::: notes
-Today, developers must manually wrap third-party or non-transactional web service calls in transaction suspend/resume blocks, increasing code complexity and introducing transaction leak risks.
+Today, developers must manually wrap third-party or non-transactional web service calls in transaction suspend/resume blocks [to stop propagation,]{.added} increasing code complexity and introducing transaction leak risks.
 :::
 
 # To-Be: Configurable Propagation
@@ -98,10 +102,14 @@ Today, developers must manually wrap third-party or non-transactional web servic
   - Non-transactional endpoints proceed cleanly without WS-AT headers
 - **Suppression Mode (`propagation="never"` / Opt-In)**:
   - Outbound WS-AT context is never attached on outbound client calls
+  - [If target declares `<wsat:ATAssertion>` as required, call throws (same as feature disabled)]{.added}
+
 - **Zero code changes required** for migrated applications
 
 ::: notes
 With propagation="conditional", Liberty inspects the endpoint policy engine. If no WS-AT assertion is declared, WS-AT headers are omitted, allowing harmonious mixed-endpoint topologies within a single transaction.
+
+[With propagation="never", outbound WS-AT context is never attached. If the target endpoint's WSDL declares ATAssertion as required (wsat:ATAssertion wsp:Optional="false"), the call will fail with an exception — this mirrors the behaviour when wsAtomicTransaction-1.2 is not enabled at all.]{.added}
 :::
 
 # Feature Design: Runtime Interception
@@ -118,7 +126,7 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   newlbl/.style={font=\sffamily\scriptsize\bfseries, color=ufocvdblue}]
 
   % All nodes centred on x=0, evenly spaced vertically
-  \node[box]    (app)      at (0,  0)    {JAX-WS Outbound Client Request (Inside Global Transaction)};
+  \node[box]    (app)      at (0,  0)    {JAX-WS [/ Jakarta]{.added} Outbound Client Request (Inside Global Transaction)};
   \node[chk]    (feat)     at (0, -1.2)  {\texttt{wsAtomicTransaction-1.2} feature configured?};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (cfg)      at (0, -2.4)  {Check Config: \texttt{propagation} setting};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (check)    at (0, -3.6)  {Target WSDL contains \texttt{ATAssertion}?};
@@ -129,17 +137,17 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \draw[line] (app)      -- (feat);
   \draw[line] (feat)     -- node[right, lbl] {Yes / configured} (cfg);
   \draw[newline] (cfg)   -- node[right, newlbl] {conditional} (check);
-  \draw[newline] (check) -- node[right, newlbl] {Match} (propagate);
+  \draw[newline] (check) -- node[right, newlbl] {[Match]{.deleted} [Yes]{.added}} (propagate);
   \draw[line] (propagate)-- (send);
 
   % Left side (No outermost, always inner — no crossings):
   %   No   (feat→send):   rail x = box.west - 2.4cm
   %   always (cfg→prop):  rail x = box.west - 1.4cm
-  % Right side (never outermost, None inner — no crossings):
+  % Right side (never outermost, No inner — no crossings):
   %   never (cfg→send):   rail x = box.east + 2.4cm
-  %   None (check→send):  rail x = box.east + 1.4cm
+  %   No (check→send):    rail x = box.east + 1.4cm
 
-  % Left: No (feat → send, outer rail — drops past send top, enters send.west)
+  % Left: No (feat → send, outer rail)
   \draw[line] (feat.west) -- ++(-2.4,0) -- ++(0,-4.8) -- (send.west);
   \node[lbl, anchor=south east] at ([xshift=-3pt]feat.west) {No};
 
@@ -149,19 +157,20 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
 
   % Right bypasses enter send.east at distinct y offsets so their
   % inbound horizontal segments are at different heights — no crossing.
-  % never: outer rail — drops to below None's inbound level, arrives lower
+  % never: outer rail — drops to below No's inbound level, arrives lower
   \draw[newline] (cfg.east) -- ++(2.4,0) -- ++(0,-3.75) -- ([yshift=-0.15cm]send.east);
   \node[newlbl, anchor=south west] at ([xshift=3pt]cfg.east) {never};
 
-  % None: inner rail — arrives above never's inbound level
+  % No: inner rail — arrives above never's inbound level
   \draw[newline] (check.east) -- ++(1.4,0) -- ++(0,-2.25) -- ([yshift=0.15cm]send.east);
-  \node[newlbl, anchor=south west] at ([xshift=3pt]check.east) {None};
+  \node[newlbl, anchor=south west] at ([xshift=3pt]check.east) {No};
 
 \end{tikzpicture}
 \end{center}
 
 ::: notes
-Simplified flow: if wsAtomicTransaction-1.2 is not configured, or propagation is "never", or the target WSDL has no ATAssertion, the request proceeds as plain SOAP with no WS-AT headers — a no-op. Headers are only attached when the feature is active and policy allows it.
+[Simplified flow: if wsAtomicTransaction-1.2 is not configured, or propagation is "never", or the target WSDL has no ATAssertion, the request proceeds as plain SOAP with no WS-AT headers — a no-op. Headers are only attached when the feature is active and policy allows it.]{.deleted}
+[Simplified flow: if wsAtomicTransaction-1.2 is not configured, or the target WSDL has no ATAssertion, the request proceeds as plain SOAP with no WS-AT headers. When propagation="never", WS-AT context is never attached — but if the target endpoint declares ATAssertion as required, the call will still throw an exception (the same behaviour as when the feature is not enabled). Headers are only attached when the feature is active, propagation is "always" or "conditional", and (for conditional) the target WSDL declares ATAssertion.]{.added}
 :::
 
 # End User Overview

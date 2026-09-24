@@ -76,7 +76,7 @@ Cover each story in turn; invite the room to challenge whether the default of "a
 
 - With `wsAtomicTransaction-1.2` enabled, any outbound JAX-WS call during a JTA transaction injects WS-AT headers
 - Non-transactional / 3rd-party endpoints reject unknown headers or fail schema validation
-- Developers must manually modify application source code [`**to stop propagation**`]{.added}:
+- Developers must manually modify application source code [**to stop propagation**]{.added}:
   - Explicitly obtain `TransactionManager` / `UserTransaction`
   - Suspend transaction prior to invocation, then resume afterwards
   - Handle complex failure and rollback paths manually

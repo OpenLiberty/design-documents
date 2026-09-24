@@ -72,7 +72,7 @@ Three user stories, each tied to an explicit `<wsAtomicTransaction/>` configurat
 Cover each story in turn; invite the room to challenge whether the default of "always" truly covers their migration use case before moving on.
 :::
 
-# [As-Is: Unconditional Propagation]{.deleted} [Propagation always on by default]{.added}
+# As-Is: [Unconditional Propagation]{.deleted} [Propagation always on by default]{.added}
 
 - With `wsAtomicTransaction-1.2` enabled, any outbound JAX-WS call during a JTA transaction injects WS-AT headers
 - Non-transactional / 3rd-party endpoints reject unknown headers or fail schema validation

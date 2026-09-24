@@ -58,37 +58,38 @@
 \usepackage{zref-savepos}     % \zsavepos — records absolute y position on page
 
 % \ufoAdd{text} — inline highlight for added/changed text.
-% In changebar/review builds (\ifufochanges): light magenta tint colorbox.
-% In final builds: renders the text plainly with no highlight.
-% Safe to use inside raw LaTeX blocks (e.g. TikZ nodes) and Beamer frame
-% titles without per-call guards. \DeclareRobustCommand makes it robust
-% across Beamer's fragile-frame write/re-read cycle.
+% In changebar/review builds (\ifufochanges): light magenta tint colorbox plus
+%   a single-line margin bar (unless inside a frametitle or a block-level
+%   \cbstart..\cbend, where \zsavepos is unreliable or redundant).
+% In final builds: renders the text plainly with no highlight or bar.
 \DeclareRobustCommand{\ufoAdd}[1]{%
   \ifufochanges
-    \ifufoincbblock
+    \ifufoinframetitle
+      {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
+    \else\ifufoincbblock
       {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
     \else
       \cbline{{\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}}%
-    \fi
+    \fi\fi
   \else
     #1%
   \fi
 }
 
 % \ufoDel{text} — inline strikethrough for deleted/removed text.
-% In changebar/review builds (\ifufochanges): struck-through text via \sout{},
-% with a single-line margin changebar via \cbline.
+% In changebar/review builds (\ifufochanges): struck-through text via \sout{}
+%   plus a single-line margin bar (suppressed in frametitles and inside
+%   \cbstart..\cbend blocks where the block bar covers the whole region).
 % In final builds: silently drops the text entirely.
-% Safe to use inside raw LaTeX blocks (e.g. TikZ nodes) and Beamer frame
-% titles. \DeclareRobustCommand survives Beamer's fragile-frame cycle and
-% TikZ's token pre-scanner.
 \DeclareRobustCommand{\ufoDel}[1]{%
   \ifufochanges
-    \ifufoincbblock
+    \ifufoinframetitle
+      \sout{#1}%
+    \else\ifufoincbblock
       \sout{#1}%
     \else
       \cbline{\sout{#1}}%
-    \fi
+    \fi\fi
   \fi
 }
 
@@ -97,41 +98,26 @@
 % across all CVD types (protanopia, deuteranopia, tritanopia).
 \definecolor{ufochanged}{RGB}{238,83,139}
 
-% Counter to give each changebar a unique label pair
-\newcounter{cbcount}
+% \ifufoinframetitle — set true while Beamer typesets the frametitle so that
+% \ufoAdd/\ufoDel suppress \cbline there (\zsavepos is unreliable in that context).
+\newif\ifufoinframetitle
+\ufoinframetitlefalse
 
-% Flag: true when inside a block-level \cbstart..\cbend or ufoDeletedBlock,
-% so \ufoAdd/\ufoDel suppress their inline \cbline (the block bar covers them).
+% \ifufoincbblock — set true inside \cbstart..\cbend regions (i.e. ::: changed
+% and ::: deleted blocks) so that \ufoAdd/\ufoDel suppress their own \cbline
+% calls.  Without this, each \ufoDel inside a block increments \thecbcount,
+% which causes \cbend to reference the wrong cb-start-N label and the block
+% bar lands at position 0 instead of alongside the content.
 \newif\ifufoincbblock
 \ufoincbblockfalse
 
-\newcommand{\cbstart}{%
-  \stepcounter{cbcount}%
-  \zsavepos{cb-start-\thecbcount}%
-  \ufoincbblocktrue
-}
+% Counter to give each changebar a unique label pair
+\newcounter{cbcount}
 
-\newcommand{\cbend}{%
-  \ufoincbblockfalse
-  \zsavepos{cb-end-\thecbcount}%
-  \edef\cbcurrent{\thecbcount}%
-  % Compute y coordinates in pt: zref stores sp (1pt = 65536sp)
-  \edef\cbystart{\the\dimexpr\zposy{cb-start-\cbcurrent} sp\relax}%
-  \edef\cbyend{\the\dimexpr\zposy{cb-end-\cbcurrent} sp\relax}%
-  \begin{tikzpicture}[remember picture, overlay]
-    % Draw a vertical rule at x = 0.85cm from the left paper edge,
-    % spanning from the \cbend position (bottom) to the \cbstart position (top).
-    \draw[ufochanged, line width=2.5pt, line cap=round]
-      ([xshift=0.85cm, yshift=\cbyend] current page.south west)
-      --
-      ([xshift=0.85cm, yshift=\cbystart] current page.south west);
-  \end{tikzpicture}%
-}
-
-% \cbline{content} — single-line changebar for inline \ufoAdd{} and \ufoDel{} spans.
-% Records the current y position, draws a fixed-height bar (22pt, baseline-centred)
-% at the standard changebar x, then typesets the content.
-% Takes one argument so the zsavepos measurement is taken before the content renders.
+% \cbline{content} — single-line margin bar for inline \ufoAdd/\ufoDel spans.
+% Records the current y position via \zsavepos and draws a bar spanning one
+% body line (22pt, baseline-centred) at the standard x = 0.85cm from page left.
+% Converges correctly after the standard 4-pass xelatex build.
 \newcommand{\cbline}[1]{%
   \stepcounter{cbcount}%
   \zsavepos{cb-inline-\thecbcount}%
@@ -144,6 +130,46 @@
       ([xshift=0.85cm, yshift=\dimexpr\cbymid+13pt\relax] current page.south west);
   \end{tikzpicture}%
   #1%
+}
+
+% \cbstart / \cbend — block-level changebar spanning a ::: changed or
+% ::: deleted div.
+%
+% Design: uses a dedicated counter \cbblockcount (separate from \cbcount used
+% by \cbline) so that \cbline calls *inside* the block do not corrupt the
+% label lookup.  The open-time counter value is stored in the TeX count register
+% \c@cbstartsnap (a plain integer register, immune to grouping concerns) so
+% \cbend can reference cb-start-blk-N even after the counter has moved on.
+%
+% Label expansion: \zsavepos does NOT expand its argument before writing;
+% we therefore build the full label string with \edef into \@cbblklabel and
+% call \zsavepos with the macro name — zref-savepos reads it as a string via
+% \@namedef, so the literal token \@cbblklabel IS the label key.  To get a
+% unique key per block we embed \thecbblockcount directly using \edef.
+\newcounter{cbblockcount}
+\newcount\ufocbstartsnap   % plain TeX integer register — not reset by groups
+
+\newcommand{\cbstart}{%
+  \stepcounter{cbblockcount}%
+  \ufocbstartsnap=\value{cbblockcount}%
+  \zsavepos{cb-blk-\thecbblockcount-start}%
+  \ufoincbblocktrue
+}
+
+\newcommand{\cbend}{%
+  \ufoincbblockfalse
+  \zsavepos{cb-blk-\the\ufocbstartsnap-end}%
+  % Compute y coordinates in pt: zref stores sp (1pt = 65536sp)
+  \edef\cbystart{\the\dimexpr\zposy{cb-blk-\the\ufocbstartsnap-start} sp\relax}%
+  \edef\cbyend{\the\dimexpr\zposy{cb-blk-\the\ufocbstartsnap-end} sp\relax}%
+  \begin{tikzpicture}[remember picture, overlay]
+    % Draw a vertical rule at x = 0.85cm from the left paper edge,
+    % spanning from the \cbend position (bottom) to the \cbstart position (top).
+    \draw[ufochanged, line width=2.5pt, line cap=round]
+      ([xshift=0.85cm, yshift=\cbyend] current page.south west)
+      --
+      ([xshift=0.85cm, yshift=\cbystart] current page.south west);
+  \end{tikzpicture}%
 }
 
 % UFO template colours
@@ -285,7 +311,8 @@
 \setbeamertemplate{frametitle}{%
   \nointerlineskip
   \vskip1.35cm%
-  {\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
+  {\ufoinframetitletrue\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
+  \ufoinframetitlefalse
   \vskip0.2cm%
 }
 

@@ -118,12 +118,11 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   newlbl/.style={font=\sffamily\scriptsize\bfseries, color=ufocvdblue}]
 
   % All nodes centred on x=0, evenly spaced vertically
-  % \ufoAdd/\ufoDel inside TikZ node text: suppress \cbline by setting
-  % \ifufoincbblock — nodes have no TeX page position so \zsavepos returns
-  % (0,0), which would draw a spurious bar/arrow at the page origin.
-  % The diagram changebars are handled explicitly by \ufoTikzChangebars below.
-  \ufoincbblocktrue
-  \node[box]    (app)      at (0,  0)    {JAX-WS \ufoAdd{/ Jakarta XML} Outbound Client Request (Inside Global Transaction)};
+  % \ufoAddVis/\ufoDelVis are used inside TikZ nodes — they render the visual
+  % highlight/strikethrough without calling \cbline (which would fire \zsavepos
+  % at a position TikZ cannot reliably report, producing a spurious arrow).
+  % The margin bars for this diagram are drawn by \ufoTikzChangebars below.
+  \node[box]    (app)      at (0,  0)    {\ufoDelVis{JAX-WS} Outbound \ufoAddVis{Web Service} Client Request (Inside Global Transaction)};
   \node[chk]    (feat)     at (0, -1.2)  {\texttt{wsAtomicTransaction-1.2} feature configured?};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (cfg)      at (0, -2.4)  {Check Config: \texttt{propagation} setting};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (wsatcheck)    at (0, -3.6)  {Target WSDL contains \texttt{ATAssertion}?};
@@ -134,8 +133,7 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \draw[line] (app)      -- (feat);
   \draw[line] (feat)     -- node[right, lbl] {Yes / configured} (cfg);
   \draw[newline] (cfg)   -- node[right, newlbl] {conditional} (wsatcheck);
-  \draw[newline] (wsatcheck) -- node[right, newlbl] {\ufoDel{Match} Yes} (propagate);
-  \ufoincbblockfalse
+  \draw[newline] (wsatcheck) -- node[right, newlbl] {\ufoDelVis{Match} \ufoAddVis{Yes}} (propagate);
   \draw[line] (propagate)-- (send);
 
   % Left side (No outermost, always inner — no crossings):

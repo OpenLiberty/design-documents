@@ -104,6 +104,25 @@
 % across all CVD types (protanopia, deuteranopia, tritanopia).
 \definecolor{ufochanged}{RGB}{238,83,139}
 
+% \ufoAddVis{text} / \ufoDelVis{text} — visual-only variants for use inside
+% TikZ node text, where \zsavepos is unreliable and flag assignments are lost
+% to TikZ's deferred group typesetting.  They render the highlight/strikethrough
+% unconditionally (in changebar builds) with no \cbline call.
+% The margin bar is handled separately by \ufoTikzChangebars.
+%
+% \colorbox silently fails inside TikZ node text (TikZ overrides xcolor's colour
+% mode switching).  Use a nested \tikz inline node with fill= instead — this is
+% TikZ-native and renders correctly inside outer TikZ node content.
+\newcommand{\ufoAddVis}[1]{%
+  \ifufochanges
+    \tikz[baseline=(ufovistmp.base),inner sep=0pt]
+      \node[fill=ufochanged!15,inner sep=0.5pt](ufovistmp){\vphantom{Ag}#1};%
+  \else#1\fi
+}
+\newcommand{\ufoDelVis}[1]{%
+  \ifufochanges\sout{#1}\fi
+}
+
 % \ifufoinframetitle — set true while Beamer typesets the frametitle so that
 % \ufoAdd/\ufoDel suppress \cbline there (\zsavepos is unreliable in that context).
 \newif\ifufoinframetitle

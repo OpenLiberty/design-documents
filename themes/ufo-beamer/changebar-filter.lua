@@ -45,11 +45,11 @@ function Div(el)
     -- (Creating a {.deleted} Span here and relying on the Span handler below
     -- does not work — the Div handler fires before Span in the same pass.)
     local function strikeitem(iblock)
-      local newInlines = {pandoc.RawInline("latex", "\\textcolor{ufochanged!80}{\\sout{")}
+      local newInlines = {pandoc.RawInline("latex", "\\sout{")}
       for _, i in ipairs(iblock.content) do
         table.insert(newInlines, i)
       end
-      table.insert(newInlines, pandoc.RawInline("latex", "}}"))
+      table.insert(newInlines, pandoc.RawInline("latex", "}"))
       if iblock.t == "Plain" then return pandoc.Plain(newInlines)
       else                        return pandoc.Para(newInlines)
       end

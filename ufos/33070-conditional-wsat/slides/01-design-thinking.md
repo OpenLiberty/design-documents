@@ -87,22 +87,21 @@ Today, developers must manually wrap third-party or non-transactional web servic
 
 # To-Be: Configurable Propagation
 
-- **`wsAtomicTransaction-1.2` Not Enabled**: Standard plain SOAP (no WS-AT headers)
+- **`wsAtomicTransaction-1.2` Not Enabled**: plain SOAP, no WS-AT headers
 - **Default Mode (`propagation="always"` or unconfigured)**:
   - Unconditional propagation remains default via `defaultInstances.xml` (Zero-Migration)
 - **Conditional Mode (`propagation="conditional"` / Opt-In)**:
-  - Outbound WS-AT context attached **only** if target WSDL advertises `<wsat:ATAssertion>`
-  - Non-transactional endpoints proceed cleanly without WS-AT headers
+  - WS-AT context attached **only** if target WSDL declares `<wsat:ATAssertion/>` (required) or `<wsat:ATAssertion wsp:Optional="true"/>` (optional); otherwise plain SOAP
 - **Suppression Mode (`propagation="never"` / Opt-In)**:
   - Outbound WS-AT context is never attached on outbound client calls
-  - [If target declares `<wsat:ATAssertion>` as required, call throws (same as feature disabled)]{.added}
+  - [If target declares `<wsat:ATAssertion/>` (required), call throws (same as feature disabled)]{.added}
 
 - **Zero code changes required** for migrated applications
 
 ::: notes
 With propagation="conditional", Liberty inspects the endpoint policy engine. If no WS-AT assertion is declared, WS-AT headers are omitted, allowing harmonious mixed-endpoint topologies within a single transaction.
 
-[With propagation="never", outbound WS-AT context is never attached. If the target endpoint's WSDL declares ATAssertion as required (wsat:ATAssertion wsp:Optional="false"), the call will fail with an exception — this mirrors the behaviour when wsAtomicTransaction-1.2 is not enabled at all.]{.added}
+[With propagation="never", outbound WS-AT context is never attached. If the target endpoint's WSDL declares ATAssertion as required (bare <wsat:ATAssertion/> with no wsp:Optional="true"), the call will fail with an exception — this mirrors the behaviour when wsAtomicTransaction-1.2 is not enabled at all.]{.added}
 :::
 
 # Feature Design: Runtime Interception

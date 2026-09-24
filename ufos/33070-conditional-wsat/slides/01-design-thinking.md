@@ -118,7 +118,12 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   newlbl/.style={font=\sffamily\scriptsize\bfseries, color=ufocvdblue}]
 
   % All nodes centred on x=0, evenly spaced vertically
-  \node[box]    (app)      at (0,  0)    {JAX-WS \ufoAdd{/ Jakarta} Outbound Client Request (Inside Global Transaction)};
+  % \ufoAdd/\ufoDel inside TikZ node text: suppress \cbline by setting
+  % \ifufoincbblock — nodes have no TeX page position so \zsavepos returns
+  % (0,0), which would draw a spurious bar/arrow at the page origin.
+  % The diagram changebars are handled explicitly by \ufoTikzChangebars below.
+  \ufoincbblocktrue
+  \node[box]    (app)      at (0,  0)    {JAX-WS \ufoAdd{/ Jakarta XML} Outbound Client Request (Inside Global Transaction)};
   \node[chk]    (feat)     at (0, -1.2)  {\texttt{wsAtomicTransaction-1.2} feature configured?};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (cfg)      at (0, -2.4)  {Check Config: \texttt{propagation} setting};
   \node[chk, draw=ufocvdblue, fill=ufocvdblue!10]    (wsatcheck)    at (0, -3.6)  {Target WSDL contains \texttt{ATAssertion}?};
@@ -130,6 +135,7 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
   \draw[line] (feat)     -- node[right, lbl] {Yes / configured} (cfg);
   \draw[newline] (cfg)   -- node[right, newlbl] {conditional} (wsatcheck);
   \draw[newline] (wsatcheck) -- node[right, newlbl] {\ufoDel{Match} Yes} (propagate);
+  \ufoincbblockfalse
   \draw[line] (propagate)-- (send);
 
   % Left side (No outermost, always inner — no crossings):
@@ -163,12 +169,19 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
 % pre-scanners. Node anchors resolve correctly because remember picture is set
 % on both the main tikzpicture above and the overlay one inside the command.
 \ufoTikzChangebars{%
-  % Bar 1: alongside 'app' node (/ Jakarta added)
+  % Bars sit at x=0.85cm from the left paper edge (matching all other changebars).
+  % The |- operator gives a coordinate at the intersection of a vertical line
+  % through current page.south west (x=0) shifted right 0.85cm, and a horizontal
+  % line through the node anchor — so the y tracks the node regardless of where
+  % the diagram sits on the page.
+  % Bar 1: alongside 'app' node (/ Jakarta XML added)
   \draw[ufochanged, line width=2.5pt, line cap=round]
-    ([xshift=-0.5cm]app.north west) -- ([xshift=-0.5cm]app.south west);
+    ([xshift=0.85cm]current page.south west |- app.north west)
+    -- ([xshift=0.85cm]current page.south west |- app.south west);
   % Bar 2: alongside 'wsatcheck' node (Match→Yes renamed)
   \draw[ufochanged, line width=2.5pt, line cap=round]
-    ([xshift=-0.5cm]wsatcheck.north west) -- ([xshift=-0.5cm]wsatcheck.south west);
+    ([xshift=0.85cm]current page.south west |- wsatcheck.north west)
+    -- ([xshift=0.85cm]current page.south west |- wsatcheck.south west);
 }%
 \end{center}
 

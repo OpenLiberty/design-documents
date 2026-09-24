@@ -61,10 +61,14 @@
 % In changebar/review builds (\ifufochanges): light magenta tint colorbox plus
 %   a single-line margin bar (unless inside a frametitle or a block-level
 %   \cbstart..\cbend, where \zsavepos is unreliable or redundant).
+%   Inside a frametitle, \zsavepos is unreliable, so no \cbline is drawn;
+%   instead \ufotitlechangedtrue is set, and the frametitle template draws
+%   a fixed-position bar after rendering the title text.
 % In final builds: renders the text plainly with no highlight or bar.
 \DeclareRobustCommand{\ufoAdd}[1]{%
   \ifufochanges
     \ifufoinframetitle
+      \global\ufotitlechangedtrue
       {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
     \else\ifufoincbblock
       {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
@@ -80,10 +84,12 @@
 % In changebar/review builds (\ifufochanges): struck-through text via \sout{}
 %   plus a single-line margin bar (suppressed in frametitles and inside
 %   \cbstart..\cbend blocks where the block bar covers the whole region).
+%   Inside a frametitle, sets \ufotitlechangedtrue instead of drawing a bar.
 % In final builds: silently drops the text entirely.
 \DeclareRobustCommand{\ufoDel}[1]{%
   \ifufochanges
     \ifufoinframetitle
+      \global\ufotitlechangedtrue
       \sout{#1}%
     \else\ifufoincbblock
       \sout{#1}%
@@ -102,6 +108,13 @@
 % \ufoAdd/\ufoDel suppress \cbline there (\zsavepos is unreliable in that context).
 \newif\ifufoinframetitle
 \ufoinframetitlefalse
+
+% \ifufotitlechanged — set true by \ufoAdd/\ufoDel when they fire inside a
+% frametitle.  The frametitle template checks this after rendering the title
+% text and draws a fixed-position overlay bar at the known frametitle y, then
+% resets the flag.
+\newif\ifufotitlechanged
+\ufotitlechangedfalse
 
 % \ifufoincbblock — set true inside \cbstart..\cbend regions (i.e. ::: changed
 % and ::: deleted blocks) so that \ufoAdd/\ufoDel suppress their own \cbline
@@ -308,11 +321,27 @@
 
 % ── Content slide frametitle ─────────────────────────────────────────────────
 % Pixel measurement: frametitle top ≈ 13.45mm from slide top edge → vskip 1.35cm
+% Paper is 254mm × 142.875mm (Beamer screen geometry).
+% \vskip1.35cm puts text top at 142.875mm - 13.5mm = 129.375mm from page bottom.
+% 40pt font ≈ 14.1mm; baseline at ~115.3mm, descenders to ~112mm, cap-top ~130mm.
+% Bar: 111mm (below baseline) → 131mm (above cap), centred on the title row.
 \setbeamertemplate{frametitle}{%
   \nointerlineskip
   \vskip1.35cm%
   {\ufoinframetitletrue\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
   \ufoinframetitlefalse
+  % If any \ufoAdd or \ufoDel fired inside the title, draw a fixed-position
+  % changebar at the known frametitle y.  Uses hardcoded coordinates because
+  % \zsavepos is unreliable during frametitle typesetting.
+  \ifufotitlechanged
+    \begin{tikzpicture}[remember picture, overlay]
+      \draw[ufochanged, line width=2.5pt, line cap=round]
+        ([xshift=0.85cm, yshift=111mm] current page.south west)
+        --
+        ([xshift=0.85cm, yshift=131mm] current page.south west);
+    \end{tikzpicture}%
+    \global\ufotitlechangedfalse
+  \fi
   \vskip0.2cm%
 }
 

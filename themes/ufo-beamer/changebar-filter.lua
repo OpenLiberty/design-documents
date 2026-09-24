@@ -1,10 +1,19 @@
 -- Pandoc Lua filter: changebar support for UFO slides
 --
--- Block-level changes: wrap a ::: changed div with \cbstart / \cbend
+-- Block-level additions: wrap a ::: changed div with \cbstart / \cbend
 --
 --   ::: changed
 --   - Bullet that was added or modified
 --   :::
+--
+-- Block-level deletions: wrap a ::: deleted div with \ufoDeletedBlock
+--
+--   ::: deleted
+--   - Bullet that was removed
+--   :::
+--
+--   In changebar builds (\ufochangestrue) the bullet is shown struck through.
+--   In final builds the block is silently discarded.
 --
 -- Inline changes on a single run of text:
 --
@@ -21,6 +30,17 @@ function Div(el)
   if el.classes:includes("changed") then
     local open  = pandoc.RawBlock("latex", "\\cbstart{}")
     local close = pandoc.RawBlock("latex", "\\cbend{}")
+    local blocks = {open}
+    for _, b in ipairs(el.content) do
+      table.insert(blocks, b)
+    end
+    table.insert(blocks, close)
+    return blocks
+  end
+
+  if el.classes:includes("deleted") then
+    local open  = pandoc.RawBlock("latex", "\\begin{ufoDeletedBlock}")
+    local close = pandoc.RawBlock("latex", "\\end{ufoDeletedBlock}")
     local blocks = {open}
     for _, b in ipairs(el.content) do
       table.insert(blocks, b)

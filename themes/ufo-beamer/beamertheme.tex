@@ -348,6 +348,31 @@
 % [fragile] frames and TikZ overlay frames).
 \newenvironment{instruction}{\setbox0\vbox\bgroup\hsize\textwidth}{\egroup}
 
+% ── Deleted block environment ─────────────────────────────────────────────────
+% ::: deleted divs in markdown compile to \begin{ufoDeletedBlock}...\end{ufoDeletedBlock}
+% via changebar-filter.lua.
+%
+% Behaviour:
+%   \ifufochanges (changebar/review build): content is rendered in a faded magenta
+%     colour with a margin changebar so reviewers can see what was removed.
+%   otherwise (final build): content is silently discarded — identical to the
+%     \begin{instruction} technique, safe inside any beamer frame.
+\newenvironment{ufoDeletedBlock}{%
+  \ifufochanges
+    \cbstart{}%
+    \begingroup\color{ufochanged!70}%
+  \else
+    \setbox0\vbox\bgroup\hsize\textwidth
+  \fi
+}{%
+  \ifufochanges
+    \endgroup
+    \cbend{}%
+  \else
+    \egroup
+  \fi
+}
+
 % ── Change key + abducted document ───────────────────────────────────────────
 % \ufochangekey  — declare in 00-title.md's raw LaTeX block (outside any frame)
 % to add a change-indicator graphic to the title page.

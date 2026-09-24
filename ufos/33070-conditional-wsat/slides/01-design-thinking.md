@@ -29,7 +29,10 @@ WS-AT coordinates distributed transactions across JAX-WS and [Jakarta XML Web Se
 
 - Enabling `wsAtomicTransaction-1.2` causes WS-AT context to propagate on **all outbound requests** in a global transaction, even if the target lacks WS-AT assertions
 - Calls to non-transactional / 3rd-party services fail when WS-AT headers are rejected
+
+::: deleted
 - Retain unconditional propagation as the default for zero-migration compatibility
+:::
 
 ::: notes
 Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists.

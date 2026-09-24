@@ -128,12 +128,13 @@
 \newcounter{cbcount}
 
 % \cbline{content} — single-line margin bar for inline \ufoAdd/\ufoDel spans.
-% Records the current y position via \zsavepos and draws a bar spanning one
-% body line (22pt, baseline-centred) at the standard x = 0.85cm from page left.
-% Converges correctly after the standard 4-pass xelatex build.
+% \zsavepos fires AFTER the content so the recorded baseline is the content
+% line itself, not the line above (which is what you get if \zsavepos fires
+% before #1 in a fragile frame where Beamer re-inputs from the .vrb file).
+% Bar spans -9pt (below baseline) to +13pt (above baseline), centred on the
+% content.  Converges correctly after the standard 4-pass xelatex build.
 \newcommand{\cbline}[1]{%
   \stepcounter{cbcount}%
-  \zsavepos{cb-inline-\thecbcount}%
   \edef\cbcurrent{\thecbcount}%
   \edef\cbymid{\the\dimexpr\zposy{cb-inline-\cbcurrent} sp\relax}%
   \begin{tikzpicture}[remember picture, overlay]
@@ -142,7 +143,7 @@
       --
       ([xshift=0.85cm, yshift=\dimexpr\cbymid+13pt\relax] current page.south west);
   \end{tikzpicture}%
-  #1%
+  #1\zsavepos{cb-inline-\cbcurrent}%
 }
 
 % \cbstart / \cbend — block-level changebar spanning a ::: changed or

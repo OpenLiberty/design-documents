@@ -41,9 +41,40 @@ function Div(el)
   if el.classes:includes("deleted") then
     local open  = pandoc.RawBlock("latex", "\\begin{ufoDeletedBlock}")
     local close = pandoc.RawBlock("latex", "\\end{ufoDeletedBlock}")
+    -- Wrap the inlines of each Plain/Para item directly in \sout{} raw LaTeX.
+    -- (Creating a {.deleted} Span here and relying on the Span handler below
+    -- does not work — the Div handler fires before Span in the same pass.)
+    local function strikeitem(iblock)
+      local newInlines = {pandoc.RawInline("latex", "\\textcolor{ufochanged!80}{\\sout{")}
+      for _, i in ipairs(iblock.content) do
+        table.insert(newInlines, i)
+      end
+      table.insert(newInlines, pandoc.RawInline("latex", "}}"))
+      if iblock.t == "Plain" then return pandoc.Plain(newInlines)
+      else                        return pandoc.Para(newInlines)
+      end
+    end
+    local function strikeblock(b)
+      if b.t == "BulletList" then
+        local newItems = {}
+        for _, item in ipairs(b.content) do
+          local newItem = {}
+          for _, iblock in ipairs(item) do
+            if iblock.t == "Plain" or iblock.t == "Para" then
+              table.insert(newItem, strikeitem(iblock))
+            else
+              table.insert(newItem, iblock)
+            end
+          end
+          table.insert(newItems, newItem)
+        end
+        return pandoc.BulletList(newItems)
+      end
+      return b
+    end
     local blocks = {open}
     for _, b in ipairs(el.content) do
-      table.insert(blocks, b)
+      table.insert(blocks, strikeblock(b))
     end
     table.insert(blocks, close)
     return blocks

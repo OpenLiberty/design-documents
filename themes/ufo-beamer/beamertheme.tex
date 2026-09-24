@@ -353,20 +353,19 @@
 % via changebar-filter.lua.
 %
 % Behaviour:
-%   \ifufochanges (changebar/review build): content is rendered in a faded magenta
-%     colour with a margin changebar so reviewers can see what was removed.
-%   otherwise (final build): content is silently discarded — identical to the
-%     \begin{instruction} technique, safe inside any beamer frame.
+%   \ifufochanges (changebar/review build): content is rendered in faded magenta
+%     with a margin changebar. The Lua filter (changebar-filter.lua) has already
+%     wrapped every bullet's inline text in \sout{} at the Pandoc AST level.
+%   otherwise (final build): content is silently discarded — same vbox trick as
+%     \begin{instruction}, safe inside any beamer frame.
 \newenvironment{ufoDeletedBlock}{%
   \ifufochanges
     \cbstart{}%
-    \begingroup\color{ufochanged!70}%
   \else
     \setbox0\vbox\bgroup\hsize\textwidth
   \fi
 }{%
   \ifufochanges
-    \endgroup
     \cbend{}%
   \else
     \egroup

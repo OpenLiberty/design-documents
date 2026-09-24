@@ -17,7 +17,7 @@ This section details how the feature is surfaced to developers, administrators, 
   - Update client behaviour table to document the new `propagation` values and their effects
 - **Target Audience**:
   - Enterprise Java developers / operations architects migrating JAX-WS workloads from tWAS to Open Liberty
-  - [Java/Jakarta EE developers propagating transactions across mixed transactional/non-transactional JAX-WS endpoints]{.added}
+  - [EE developers propagating transactions across mixed transactional/non-transactional web services]{.added}
 
 ::: notes
 Enablement will be delivered through standard Open Liberty release blogs and feature documentation on openliberty.io, specifically calling out the closure of the tWAS migration gap.

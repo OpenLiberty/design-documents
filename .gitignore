@@ -1,1 +1,11 @@
-
+# Build artefacts
+build/
+output/
+*.nav
+*.snm
+*.toc
+*.aux
+*.log
+*.out
+*.pdf
+.DS_Store

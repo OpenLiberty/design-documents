@@ -1,0 +1,479 @@
+% Custom Beamer theme to match the UFO (Upcoming Feature Overview) PowerPoint template
+% Page size: native PPTX canvas 10" × 5.625" = 254mm × 142.875mm = 720pt × 405.36pt
+
+% \author{} is set via \AtBeginDocument in build/ufo-vars.tex
+
+\usetheme{default}
+\usepackage{geometry}
+\geometry{paperwidth=254mm,paperheight=142.875mm,margin=0pt}
+
+% Required packages for background images and layout
+\usepackage{tikz}
+\usepackage{eso-pic}
+\usepackage{graphicx}
+% \graphicspath is set by each UFO's Makefile via VARS_TEX so the theme
+% directory can be found regardless of where the UFO folder lives in the repo.
+% Fallback covers the common case of running from inside the UFO directory.
+\graphicspath{{images/}}
+
+% Fonts — match the PPTX slide master:
+%   Trebuchet MS: titles (content slides 40pt, section dividers 54pt, title page 24pt)
+%   Arial:        body text, author lines, URL
+\usepackage{fontspec}
+\setmainfont{Arial}
+\setsansfont{Arial}
+\newfontfamily\titlefont{Trebuchet MS}
+\usepackage{newunicodechar}
+\newunicodechar{⭐}{\ensuremath{\star}}
+
+% Code block styling
+\usepackage{fancyvrb}
+\usepackage{xcolor}
+
+% ── Changebars ────────────────────────────────────────────────────────────────
+% Uses a TikZ remember picture/overlay approach rather than the changebar package
+% so the bar position is always fixed in the slide margin, independent of list
+% indent depth.
+%
+% \cbstart{} records the current page position into a named TikZ coordinate.
+% \cbend{} records the end position and draws a red vertical rule between them
+% in an overlay, anchored 0.85cm from the slide's left paper edge.
+%
+% ulem provides \sout{} for struck-through deleted text.
+%
+% Usage in markdown:
+%
+%   Block-level (whole bullet or paragraph):
+%     ::: changed
+%     - Modified bullet
+%     :::
+%
+%   Inline addition:
+%     [new wording]{.added}
+%
+%   Inline deletion (struck through):
+%     [old wording]{.deleted}
+%
+\usepackage[normalem]{ulem}   % \sout — normalem keeps \emph as italic
+\usepackage{zref-savepos}     % \zsavepos — records absolute y position on page
+
+% \ufoAdded{text} — inline highlight for added/changed text.
+% Uses a very light magenta tint (ufochanged!15) with tight padding so the
+% highlight is visible without disrupting line spacing.
+% \fboxsep controls the padding; saving/restoring avoids side-effects.
+\newcommand{\ufoAdded}[1]{%
+  {\setlength{\fboxsep}{1.5pt}\colorbox{ufochanged!15}{#1}}%
+}
+
+% CVD-safe changebar colour: IBM Magenta-50 #EE538B
+% Distinguishable from navy/teal/blue family by both hue and luminance
+% across all CVD types (protanopia, deuteranopia, tritanopia).
+\definecolor{ufochanged}{RGB}{238,83,139}
+
+% Counter to give each changebar a unique label pair
+\newcounter{cbcount}
+
+\newcommand{\cbstart}{%
+  \stepcounter{cbcount}%
+  \zsavepos{cb-start-\thecbcount}%
+}
+
+\newcommand{\cbend}{%
+  \zsavepos{cb-end-\thecbcount}%
+  \edef\cbcurrent{\thecbcount}%
+  % Compute y coordinates in pt: zref stores sp (1pt = 65536sp)
+  \edef\cbystart{\the\dimexpr\zposy{cb-start-\cbcurrent} sp\relax}%
+  \edef\cbyend{\the\dimexpr\zposy{cb-end-\cbcurrent} sp\relax}%
+  \begin{tikzpicture}[remember picture, overlay]
+    % Draw a red vertical rule at x = 0.85cm from the left paper edge,
+    % spanning from the \cbend position (bottom) to the \cbstart position (top).
+    \draw[ufochanged, line width=2.5pt, line cap=round]
+      ([xshift=0.85cm, yshift=\cbyend] current page.south west)
+      --
+      ([xshift=0.85cm, yshift=\cbystart] current page.south west);
+  \end{tikzpicture}%
+}
+
+% UFO template colours
+\definecolor{ufonavydark}{RGB}{32,32,62}     % #20203E - title page text / section bg
+\definecolor{ufoteal}{RGB}{76,87,125}        % #4C577D - content slide frametitle
+\definecolor{ufobullet}{RGB}{76,87,125}      % bullet colour on white slides
+\definecolor{ufopagenumber}{RGB}{186,192,212}  % #BAC0D4 - slide number on content slides
+\definecolor{ufolime}{RGB}{198,224,0}        % #C6E000 - slide number on dark/section slides
+
+% ── Slide margins — match PPTX master placeholder left=1.27cm ────────────────
+\setbeamersize{text margin left=1.27cm, text margin right=1.27cm}
+
+% ── Content slide colours (white background, teal text) ──────────────────────
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{frametitle}{fg=ufoteal,bg=white}
+\setbeamercolor{structure}{fg=ufoteal}
+\setbeamercolor{itemize item}{fg=ufobullet}
+\setbeamercolor{itemize subitem}{fg=ufobullet}
+\setbeamercolor{enumerate item}{fg=ufobullet}
+\setbeamercolor{enumerate subitem}{fg=ufobullet}
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{\textbullet}
+\setbeamertemplate{itemize subsubitem}{\textbullet}
+\setbeamercolor{footline}{fg=ufopagenumber}
+
+% Code block styling — light grey background on white slides
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codetext}{RGB}{0,0,0}
+\definecolor{codeframe}{RGB}{200,200,200}
+
+\let\oldverbatim\verbatim
+\let\endoldverbatim\endverbatim
+\renewenvironment{verbatim}{%
+  \vspace{-0.35cm}%
+  \hspace{0.6cm}%
+  \begin{beamercolorbox}[wd=\dimexpr\textwidth-0.6cm\relax,sep=0.4em,rounded=true,shadow=false]{block body}%
+  \fontsize{13}{16}\selectfont
+  \oldverbatim
+}{%
+  \endoldverbatim
+  \end{beamercolorbox}%
+}
+
+\setbeamercolor{block body}{bg=codebg,fg=codetext}
+\setbeamercolor{block title}{bg=codeframe,fg=codetext}
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+% Title slide text colours — dark navy on yellow-green beam
+\setbeamercolor{title}{fg=ufonavydark,bg=}
+\setbeamercolor{subtitle}{fg=ufonavydark,bg=}
+\setbeamercolor{author}{fg=ufoteal,bg=}
+\setbeamercolor{date}{fg=ufoteal,bg=}
+\setbeamercolor{institute}{fg=ufoteal,bg=}
+
+% Fonts — tuned by pixel measurement against 150dpi renders:
+%   Frametitle: 40pt  (Trebuchet MS — PPTX sz=3600 but measures larger on this canvas)
+%   Body:       24pt  (Arial — PPTX sz=2000 but measures ~24pt cap height at this scale)
+%   Title page: 24pt  (Trebuchet MS bold)
+%   Section:    54pt  (Trebuchet MS)
+%   Page num:   15pt
+\setbeamerfont{title}{size=\fontsize{24}{28}\selectfont,series=\bfseries}
+\setbeamerfont{frametitle}{size=\fontsize{40}{44}\selectfont,series=\mdseries}
+\setbeamerfont{author}{size=\fontsize{20}{22}\selectfont,series=\mdseries}
+
+% Body text and list typography
+\usepackage{etoolbox}
+\setbeamerfont{normal text}{size=\fontsize{18}{22}\selectfont}
+\setbeamerfont{itemize/enumerate body}{size=\fontsize{18}{22}\selectfont}
+\setbeamerfont{itemize/enumerate subbody}{size=\fontsize{15}{18}\selectfont}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\fontsize{13}{16}\selectfont}
+\setlength{\parskip}{6pt}
+
+\AtBeginEnvironment{itemize}{%
+  \fontsize{18}{22}\selectfont\linespread{1.1}\selectfont%
+  \setlength{\itemsep}{6pt}\setlength{\parsep}{0pt}}
+\AtBeginEnvironment{enumerate}{%
+  \fontsize{18}{22}\selectfont\linespread{1.1}\selectfont%
+  \setlength{\itemsep}{6pt}\setlength{\parsep}{0pt}}
+
+\setbeamertemplate{itemize/enumerate subbody begin}{\fontsize{15}{18}\selectfont\setlength{\itemsep}{4pt}\setlength{\parsep}{0pt}}
+\setbeamertemplate{itemize/enumerate subsubbody begin}{\fontsize{13}{16}\selectfont\setlength{\itemsep}{3pt}\setlength{\parsep}{0pt}}
+
+\def\tightlist{\setlength{\itemsep}{5pt}\setlength{\parsep}{0pt}}
+
+% Gap between frametitle bottom and body
+\addtobeamertemplate{frametitle}{}{\vspace{-0.3cm}}
+
+% No navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% ── Slide number ──────────────────────────────────────────────────────────────
+% Content slides: grey #BAC0D4
+% Section divider slides: lime #C6E000  (set via \sectionslide)
+% Title slide (frame 1): suppressed
+%
+% Absolutely positioned via TikZ: right edge 0.44cm from slide right,
+% bottom edge 0.34cm from slide bottom.
+\setbeamertemplate{footline}{%
+  \ifnum\insertframenumber>1
+    \begin{tikzpicture}[remember picture,overlay]
+      \node[anchor=south east,
+            xshift=-0.44cm,
+            yshift=0.34cm] at (current page.south east) {%
+        \usebeamercolor[fg]{footline}\fontsize{15}{18}\selectfont\insertframenumber
+      };
+    \end{tikzpicture}%
+  \fi
+}
+
+% ── Content slide background: white with Open Liberty branding top-right ──────
+% Two images from the PPTX slide master, positioned by EMU coordinates
+% (slide canvas = 9144000 × 5143500 EMU):
+%
+%   content-ship.png     rId10/image1: left=73.5%, top=11.7%, w=26.8%, h=9.4%
+%                        anchor=north east, right edge at slide right (x≈100.4%)
+%                        → xshift=0, yshift=-0.117\paperheight
+%
+%   content-wordmark.png rId11/image2: left=84.3%, top=6.6%,  w=13.4%, h=5.2%
+%                        anchor=north east, right edge at 97.7% of slide width
+%                        → xshift=-0.024\paperwidth, yshift=-0.066\paperheight
+\setbeamertemplate{background}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[white] (current page.south west) rectangle (current page.north east);
+    \node[anchor=north east,
+          xshift=0pt,
+          yshift=-0.117\paperheight] at (current page.north east) {%
+      \includegraphics[width=0.268\paperwidth]{content-ship.png}%
+    };
+    \node[anchor=north east,
+          xshift=-0.024\paperwidth,
+          yshift=-0.066\paperheight] at (current page.north east) {%
+      \includegraphics[width=0.134\paperwidth]{content-wordmark.png}%
+    };
+  \end{tikzpicture}%
+}
+
+% ── Content slide frametitle ─────────────────────────────────────────────────
+% Pixel measurement: frametitle top ≈ 13.45mm from slide top edge → vskip 1.35cm
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \vskip1.35cm%
+  {\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
+  \vskip0.2cm%
+}
+
+% ── Title page ────────────────────────────────────────────────────────────────
+% Layout derived from PPTX EMU coordinates + pixel calibration against title-bg.png
+% (3584×2016 px, 300 dpi → 254mm×142.875mm when scaled to paperwidth):
+%   - title-bg.png: full-bleed dark navy + yellow-green UFO searchlight
+%   - Open Liberty logo: top-left, width=6.291cm, offset (0.647cm, −0.826cm)
+%   - Title text: xshift=9% from left, yshift=−48% from top (inside beam at left edge)
+%   - Author block: xshift=9% from left, ~58% from top (raisebox −0.26 from text-area top)
+%   - URL footnote: bottom-left corner, 15pt dark navy
+%
+% NOTE: TikZ remember picture/overlay requires TWO xelatex passes to resolve
+% current page anchors correctly (see Makefile).  With a single pass the
+% background images render offset.
+%
+% \href inside TikZ nodes is dropped by xdvipdfmx; the author block therefore
+% uses \rlap/\raisebox in normal TeX flow to preserve live hyperlinks.
+% The raisebox origin is the top-left of the frame text area (≈30% from page top
+% on the title frame); −0.26\paperheight drops it to ≈58% from page top.
+\definecolor{ufolink}{RGB}{0,102,204}   % blue — distinguishable from the teal body text
+
+\setbeamertemplate{title page}{%
+  % ── Layer 1: full-bleed background + logo + title text + footnote (TikZ) ─────
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[at=(current page.center)] {%
+      \includegraphics[width=\paperwidth,height=\paperheight]{title-bg.png}%
+    };
+    \node[anchor=north west, xshift=0.647cm, yshift=-0.826cm]
+      at (current page.north west) {%
+      \includegraphics[width=6.291cm]{openliberty-logo.png}%
+    };
+    \node[anchor=north west,
+          xshift=0.09\paperwidth,
+          yshift=-0.48\paperheight] at (current page.north west) {%
+      \begin{minipage}{0.62\paperwidth}
+        \raggedright
+        \usebeamerfont{title}\titlefont\color{ufonavydark}\inserttitle
+      \end{minipage}%
+    };
+    \node[anchor=south west, xshift=0.3cm, yshift=0.25cm]
+      at (current page.south west) {%
+      \fontsize{15}{17}\selectfont\color{ufonavydark}%
+      Upcoming Feature Overview (UFO) Template V59 ---
+      https://github.ibm.com/websphere/ufo/tree/v59/template%
+    };
+  \end{tikzpicture}%
+  % ── Layer 2: author block as normal TeX flow (outside TikZ for live \href) ───
+  % \href inside TikZ nodes is dropped by xdvipdfmx; author must stay outside TikZ.
+  % After \end{tikzpicture} TeX is in horizontal mode with a zero-size box at the
+  % top-left of the frame text area (≈30% from page top on the title frame).
+  % \rlap keeps zero width so no space is consumed; \raisebox{-0.26\paperheight}
+  % drops the block to ≈56% from page top, below the title node.
+  \rlap{%
+    \raisebox{-0.26\paperheight}[0pt][0pt]{%
+      \hspace*{0.09\paperwidth}%
+      \begin{minipage}{0.55\paperwidth}
+        \raggedright
+        \usebeamerfont{author}\color{ufoteal}%
+        \insertauthor
+      \end{minipage}%
+    }%
+  }%
+  % ── Layer 3: optional change key (drawn only when \ufochangekey was called) ──
+  \ufochangekeyifenabled%
+}
+
+% ── Section divider slide ─────────────────────────────────────────────────────
+% Usage in markdown:
+%
+%   # Section Title {.unnumbered}
+%
+%   ```{=latex}
+%   \sectionslide{Section Title}
+%   ```
+%
+% IMPORTANT: Do NOT use {.plain} — the footline must remain active so the page
+% number appears. \sectionslide draws the full-bleed dark background and centred
+% title via TikZ (covering the default frametitle), then overrides the footline
+% colour to lime for this frame only.
+\newcommand{\sectionslide}[1]{%
+  \setbeamercolor{footline}{fg=ufolime}%
+  % Suppress the frametitle vskip for this frame so no white gap appears above
+  % the full-bleed TikZ background overlay.
+  \setbeamertemplate{frametitle}{}%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[at=(current page.center)] {%
+      \includegraphics[width=\paperwidth,height=\paperheight]{section-bg.png}%
+    };
+    \node[at=(current page.center)] {%
+      \begin{minipage}{0.75\paperwidth}
+        \centering
+        \titlefont\fontsize{54}{60}\selectfont\color{white}#1
+      \end{minipage}%
+    };
+  \end{tikzpicture}%
+  \setbeamercolor{footline}{fg=ufopagenumber}%
+}
+
+% ── Instruction notes environment ────────────────────────────────────────────
+% ::: instruction blocks in markdown compile to \begin{instruction}...\end{instruction}
+% via pandoc's generic div handling (via theme/instruction-filter.lua).
+% On the presentation slides these produce no visible output; their content is
+% surfaced only in the notes/handout PDFs generated by generate-handouts.py,
+% where they appear in an amber-tinted box.
+%
+% Implementation: collect the body into a scratch vbox that is immediately
+% discarded — zero output, zero spacing, safe inside beamer frames (including
+% [fragile] frames and TikZ overlay frames).
+\newenvironment{instruction}{\setbox0\vbox\bgroup\hsize\textwidth}{\egroup}
+
+% ── Change key + abducted document ───────────────────────────────────────────
+% \ufochangekey  — declare in 00-title.md's raw LaTeX block (outside any frame)
+% to add a change-indicator graphic to the title page.
+%
+% Mechanism: \ufochangekey sets a boolean flag; the title page template checks
+% the flag and draws the graphic inline — so no separate frame is created.
+%
+% Usage in 00-title.md (after the YAML front matter, before any heading):
+%
+%   ```{=latex}
+%   \ufochangekey
+%   ```
+%
+% This block is emitted by Pandoc before \frame{\titlepage}, so the flag is
+% set in time for the title template to read it.
+%
+\newif\ifufochanges
+\ufochangesfalse
+
+% \ufochangekeyifenabled — called from the title page template.
+% Defined as a standalone command so the \if..\fi pair lives outside
+% Beamer's \setbeamertemplate token scanner, which misreads bare conditionals.
+\newcommand{\ufochangekeyifenabled}{%
+  \ifufochanges\ufochangekeydraw\fi%
+}
+
+\newcommand{\ufochangekey}{\ufochangestrue}
+
+\newcommand{\ufochangekeydraw}{%
+  \begin{tikzpicture}[remember picture, overlay]
+
+    % ── 1. "Changes detected!" scan label ─────────────────────────────────────
+    % Font matches the footer page number (fontsize 15/18).
+    \node[anchor=center,
+          xshift= 0.76\paperwidth,
+          yshift=-0.255\paperheight,
+          font=\sffamily\fontsize{15}{18}\selectfont\bfseries,
+          text=ufochanged, opacity=0.9]
+      at (current page.north west)
+      {$\blacktriangleright$ Changes detected!};
+
+    % ── 2. Abducted document ──────────────────────────────────────────────────
+    % Positioned in the open beam area: centre at (76%, 38%) from page NW.
+    \node[anchor=center,
+          xshift= 0.76\paperwidth,
+          yshift=-0.385\paperheight] (doc) at (current page.north west) {};
+
+    % Document body — white page
+    \draw[fill=white, draw=ufonavydark!30, line width=0.4pt,
+          rounded corners=2pt]
+      ([xshift=-1.05cm, yshift=-0.75cm]doc.center)
+      rectangle
+      ([xshift= 1.05cm, yshift= 0.75cm]doc.center);
+
+    % Ruled text lines inside the page
+    \foreach \dy in {0.35, 0.15, -0.05, -0.25} {
+      \draw[ufonavydark!20, line width=0.6pt]
+        ([xshift=-0.65cm, yshift=\dy cm]doc.center)
+        -- ([xshift=0.75cm, yshift=\dy cm]doc.center);
+    }
+    % Shorter bottom line
+    \draw[ufonavydark!20, line width=0.6pt]
+      ([xshift=-0.65cm, yshift=-0.45cm]doc.center)
+      -- ([xshift= 0.20cm, yshift=-0.45cm]doc.center);
+
+    % Magenta changebar on the left margin of the document
+    \draw[ufochanged, line width=2pt, line cap=round]
+      ([xshift=-0.82cm, yshift=-0.55cm]doc.center)
+      -- ([xshift=-0.82cm, yshift= 0.55cm]doc.center);
+
+    % Magenta dashed highlight ring around the whole document
+    \draw[ufochanged, line width=1.8pt, rounded corners=4pt,
+          dashed, dash pattern=on 3pt off 2pt]
+      ([xshift=-1.2cm,  yshift=-0.90cm]doc.center)
+      rectangle
+      ([xshift= 1.2cm,  yshift= 0.90cm]doc.center);
+
+    % ── 3. Legend chip ────────────────────────────────────────────────────────
+    % Four rows: margin changebar / change highlight ring /
+    %            change highlight glow / removed text.
+    % Centre at (76%, 57%) from page NW; height ±0.76cm.
+    \node[anchor=center,
+          xshift= 0.76\paperwidth,
+          yshift=-0.575\paperheight] (leg) at (current page.north west) {};
+
+    % White pill background (four rows)
+    \draw[fill=white, draw=ufonavydark!25, line width=0.4pt,
+          rounded corners=3pt]
+      ([xshift=-1.55cm, yshift=-0.76cm]leg.center)
+      rectangle
+      ([xshift= 1.55cm, yshift= 0.76cm]leg.center);
+
+    % Row 1: margin changebar swatch + label
+    \draw[ufochanged, line width=2.5pt, line cap=round]
+      ([xshift=-1.35cm, yshift= 0.48cm]leg.center)
+      -- ([xshift=-1.35cm, yshift= 0.66cm]leg.center);
+    \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
+          text=ufonavydark]
+      at ([xshift=-1.18cm, yshift= 0.57cm]leg.center)
+      {margin changebar};
+
+    % Row 2: change highlight ring swatch + label
+    \draw[ufochanged, line width=1.4pt, rounded corners=2pt,
+          dashed, dash pattern=on 2.5pt off 1.5pt]
+      ([xshift=-1.45cm, yshift= 0.10cm]leg.center)
+      rectangle
+      ([xshift=-1.05cm, yshift= 0.28cm]leg.center);
+    \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
+          text=ufonavydark]
+      at ([xshift=-0.98cm, yshift= 0.19cm]leg.center)
+      {change highlight ring};
+
+    % Row 3: change highlight glow swatch + label
+    % Filled dot with semi-transparent outer glow (postaction).
+    \draw[ufochanged, fill=ufochanged,
+          postaction={draw, ufochanged!35, line width=4pt}]
+      ([xshift=-1.25cm, yshift=-0.19cm]leg.center) circle (3pt);
+    \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
+          text=ufonavydark]
+      at ([xshift=-0.98cm, yshift=-0.19cm]leg.center)
+      {change highlight glow};
+
+    % Row 4: removed text — struck-out sample
+    \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
+          text=ufonavydark]
+      at ([xshift=-1.45cm, yshift=-0.57cm]leg.center)
+      {\sout{removed text}};
+
+  \end{tikzpicture}%
+}
+
+% Made with Bob

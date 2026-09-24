@@ -51,11 +51,11 @@ endif
 _GIT_DIRTY := $(shell git status --porcelain $(SOURCES) 2>/dev/null)
 ifneq ($(_GIT_DIRTY),)
   GIT_DATE  := $(shell date '+%Y-%m-%d')
-  GIT_SHA   := ????????
+  GIT_SHA   := ????????????
   GIT_DRAFT := true
 else
   GIT_DATE  := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d' -- $(SOURCES) 2>/dev/null)
-  GIT_SHA   := $(shell git log -1 --format=%h -- $(SOURCES) 2>/dev/null)
+  GIT_SHA   := $(shell git log -1 --abbrev=12 --format=%h -- $(SOURCES) 2>/dev/null)
   GIT_DRAFT := false
 endif
 

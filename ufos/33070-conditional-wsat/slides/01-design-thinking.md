@@ -31,7 +31,7 @@ WS-AT coordinates distributed transactions across JAX-WS and [Jakarta XML Web Se
 - Calls to non-transactional / 3rd-party services fail when WS-AT headers are rejected
 
 ::: deleted
-- Allow transactions to be propagated only to web services that express a WS-AT policy assertion in their WSDL
+- Allow transactions to be propagated only to web services that express a WS-AT policy assertion in their WSDL…
 - Retain unconditional propagation as the default for zero-migration compatibility
 :::
 

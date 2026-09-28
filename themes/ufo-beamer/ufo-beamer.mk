@@ -71,11 +71,27 @@ EPICS_LINKS := $(shell $(EPICS_SH) links "$(EPICS)")
 # UFO Makefile before the include if this is not a real UFO.
 PDF_PREFIX ?= ufo-
 
+# WITH_CHANGES — convenience flag for revised UFO builds.
+# Set WITH_CHANGES = true in the UFO Makefile to activate the change key on
+# the title slide, append -with-changes to the PDF filename, and enable the
+# Pandoc ufo-changes metadata that drives Mermaid/TikZ change annotations.
+# All three variables can still be overridden individually if needed.
+WITH_CHANGES ?= false
+ifeq ($(WITH_CHANGES),true)
+  EXTRA_VARS_TEX    ?= \ufochangestrue
+  PDF_VARIANT       ?= -with-changes
+  PANDOC_EXTRA_META ?= --metadata ufo-changes=true
+endif
+
+# PDF variant tag — set to '-with-changes' in the UFO Makefile alongside
+# EXTRA_VARS_TEX = \ufochangestrue to distinguish revision builds from originals.
+PDF_VARIANT ?=
+
 PDF_STEM         = $(PDF_PREFIX)$(EPICS_SLUG)-$(TITLE_SLUG)
-PDF_SLIDES       = $(OUTPUT_DIR)/$(PDF_STEM)-slides.pdf
-PDF_NOTES        = $(OUTPUT_DIR)/$(PDF_STEM)-notes.pdf
-PDF_HANDOUT      = $(OUTPUT_DIR)/$(PDF_STEM)-handout.pdf
-PDF_SPEAKERNOTES = $(OUTPUT_DIR)/$(PDF_STEM)-speakernotes.pdf
+PDF_SLIDES       = $(OUTPUT_DIR)/$(PDF_STEM)-slides$(PDF_VARIANT).pdf
+PDF_NOTES        = $(OUTPUT_DIR)/$(PDF_STEM)-notes$(PDF_VARIANT).pdf
+PDF_HANDOUT      = $(OUTPUT_DIR)/$(PDF_STEM)-handout$(PDF_VARIANT).pdf
+PDF_SPEAKERNOTES = $(OUTPUT_DIR)/$(PDF_STEM)-speakernotes$(PDF_VARIANT).pdf
 
 VARS_TEX = $(BUILD_DIR)/ufo-vars.tex
 
@@ -112,12 +128,18 @@ $(VARS_TEX): | $(BUILD_DIR)
 	  printf '}\n'; \
 	} > $@
 
+# PANDOC_EXTRA_META — optional metadata flags set by individual UFO Makefiles.
+# e.g. --metadata ufo-changes=true alongside EXTRA_VARS_TEX = \ufochangestrue
+PANDOC_EXTRA_META ?=
+
 PANDOC_FLAGS = \
 	-t beamer \
 	--pdf-engine=xelatex \
 	--syntax-highlighting=none \
 	--lua-filter=$(THEME_DIR)/instruction-filter.lua \
 	--lua-filter=$(THEME_DIR)/changebar-filter.lua \
+	--lua-filter=$(THEME_DIR)/table-filter.lua \
+	$(PANDOC_EXTRA_META) \
 	-H $(THEME) \
 	-H $(VARS_TEX)
 

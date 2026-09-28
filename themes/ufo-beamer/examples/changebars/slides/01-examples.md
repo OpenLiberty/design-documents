@@ -147,3 +147,37 @@ technique) drawn outside the node border, leaving the node style unchanged. New
 paths use a thick magenta arrow with a semi-transparent halo glow (postaction).
 The diagram reads correctly without altering any element's meaning.
 :::
+
+# Ex 6: Whole new block
+
+- Enabling `acme-gizmo-2.0` causes Gizmo context to propagate globally
+
+::: added
+- **New**: `propagation="conditional"` — attach headers only to doodads declaring `<acme:GizmoSupport>`
+- **New**: `propagation="never"` — suppress all outbound Gizmo headers unconditionally
+:::
+
+- Default `propagation="always"` preserved for zero-migration compatibility
+
+::: notes
+Example 6: ::: added marks entirely new bullets. The magenta margin bar is the
+same as ::: changed, but the light magenta background tint signals that this
+content did not exist in the previous revision at all.
+:::
+
+# Ex 7: Removed block
+
+- Enabling `acme-gizmo-2.0` causes Gizmo context to propagate globally
+
+::: deleted
+- Gizmo headers attached unconditionally to **all** outbound calls
+- No per-endpoint opt-out mechanism available
+:::
+
+- Replacement behaviour is governed by the `propagation` attribute
+
+::: notes
+Example 7: ::: deleted marks bullets that are being removed. Content is greyed
+out and struck through; the magenta margin bar still draws attention to the
+change location.
+:::

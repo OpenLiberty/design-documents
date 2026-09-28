@@ -29,6 +29,23 @@
 % Code block styling
 \usepackage{fancyvrb}
 \usepackage{xcolor}
+\usepackage{colortbl}   % \rowcolors — alternating table row shading
+\usepackage{booktabs}   % \toprule / \midrule / \bottomrule for raw tabular blocks
+
+% ── Longtable: load unconditionally so \LTleft/\LTright are always defined ───
+% table-filter.lua converts Pandoc pipe tables to \tabular, so longtable is
+% not emitted automatically. However, raw {=latex} blocks may still use it,
+% and beamertheme.tex references \LTleft/\LTright so they must exist.
+% The \AtBeginEnvironment hook centres and applies row-shading to any longtable
+% that does appear (e.g. from a raw block).
+\usepackage{longtable}
+\setlength{\LTleft}{0pt plus 1fill}
+\setlength{\LTright}{0pt plus 1fill}
+
+\AtBeginEnvironment{longtable}{%
+  \setlength{\linewidth}{0pt}%
+  \rowcolors{2}{black!6}{white}%
+}
 
 % ── Changebars ────────────────────────────────────────────────────────────────
 % Uses a TikZ remember picture/overlay approach rather than the changebar package
@@ -57,152 +74,185 @@
 \usepackage[normalem]{ulem}   % \sout — normalem keeps \emph as italic
 \usepackage{zref-savepos}     % \zsavepos — records absolute y position on page
 
-% \ufoAdd{text} — inline highlight for added/changed text.
-% In changebar/review builds (\ifufochanges): light magenta tint colorbox plus
-%   a single-line margin bar (unless inside a frametitle or a block-level
-%   \cbstart..\cbend, where \zsavepos is unreliable or redundant).
-%   Inside a frametitle, \zsavepos is unreliable, so no \cbline is drawn;
-%   instead \ufotitlechangedtrue is set, and the frametitle template draws
-%   a fixed-position bar after rendering the title text.
-% In final builds: renders the text plainly with no highlight or bar.
-\DeclareRobustCommand{\ufoAdd}[1]{%
-  \ifufochanges
-    \ifufoinframetitle
-      \global\ufotitlechangedtrue
-      {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
-    \else\ifufoincbblock
-      {\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}%
-    \else
-      \cbline{{\setlength{\fboxsep}{0.5pt}\colorbox{ufochanged!15}{#1}}}%
-    \fi\fi
-  \else
-    #1%
-  \fi
+% \ifufochanges — master gate for all change markup.
+% Must be declared before any command that references it.
+% Set to true via EXTRA_VARS_TEX = \ufochangestrue in the UFO Makefile.
+\newif\ifufochanges
+\ufochangesfalse
+
+% \ufoAdded{text} — inline highlight for added/changed text.
+% Renders the light magenta colorbox only when \ufochangestrue is set;
+% otherwise passes the text through unchanged.
+\newcommand{\ufoAdded}[1]{%
+  \ifufochanges%
+    {\setlength{\fboxsep}{1.5pt}\colorbox{ufochanged!15}{#1}}%
+  \else%
+    {#1}%
+  \fi%
 }
 
-% \ufoDel{text} — inline strikethrough for deleted/removed text.
-% In changebar/review builds (\ifufochanges): struck-through text via \sout{}
-%   plus a single-line margin bar (suppressed in frametitles and inside
-%   \cbstart..\cbend blocks where the block bar covers the whole region).
-%   Inside a frametitle, sets \ufotitlechangedtrue instead of drawing a bar.
-% In final builds: silently drops the text entirely.
-\DeclareRobustCommand{\ufoDel}[1]{%
-  \ifufochanges
-    \ifufoinframetitle
-      \global\ufotitlechangedtrue
-      \sout{#1}%
-    \else\ifufoincbblock
-      \sout{#1}%
-    \else
-      \cbline{\sout{#1}}%
-    \fi\fi
-  \fi
+% \ufoSout{text} — inline strikethrough for deleted/changed text.
+% Renders \sout{} only when \ufochangestrue is set; otherwise passes
+% the text through unchanged.
+\newcommand{\ufoSout}[1]{%
+  \ifufochanges%
+    \sout{#1}%
+  \else%
+    {#1}%
+  \fi%
 }
+
+% ufoAddedBlock — block-level environment for ::: added divs.
+% Applies the light magenta beamercolorbox tint only when \ufochangestrue.
+% The enclosing \cbstart/\cbend supplies the margin bar.
+\newenvironment{ufoAddedBlock}{%
+  \ifufochanges%
+    \setbeamercolor{ufoaddedblock}{bg=ufochanged!15,fg=black}%
+    \begin{beamercolorbox}[wd=\textwidth,sep=2pt]{ufoaddedblock}%
+  \fi%
+}{%
+  \ifufochanges%
+    \end{beamercolorbox}%
+  \fi%
+}
+
+% ufoDeletedBlock — block-level environment for ::: deleted divs.
+% Applies grey colour only when \ufochangestrue. The \ufoSout{} calls on
+% each item (emitted by changebar-filter.lua) are also gated by \ifufochanges.
+% The enclosing \cbstart/\cbend supplies the margin bar.
+\newenvironment{ufoDeletedBlock}{%
+  \ifufochanges%
+    \color{black!50}%
+  \fi%
+}{%
+}
+
+% ── CVD-safe categorical palette (IBM / Wong 2011) ───────────────────────────
+%
+% These five colours are perceivable as distinct by people with protanopia,
+% deuteranopia, and tritanopia. They differ in both hue AND luminance, so
+% they remain separable even in greyscale print or high-contrast mode.
+%
+% Use them for data series, diagram node categories, and any place where
+% colour alone must convey meaning. Do NOT substitute arbitrary brand colours
+% in those contexts — brand colours are not guaranteed CVD-safe in combination.
+%
+% Palette source: https://www.color-hex.com/color-palette/1044488
+%   Slot 1 — Gold    #ffb000  — warm, high-luminance; good for "warning" category
+%   Slot 2 — Orange  #fe6100  — distinct from gold by hue; use for second series
+%   Slot 3 — Magenta #dc267f  — mid-luminance; good for "error" / change markers
+%   Slot 4 — Violet  #785ef0  — cool, mid-luminance; good for "feature" category
+%   Slot 5 — Blue    #648fff  — brightest cool; good for "info" / primary series
+%
+% In TikZ: use these as fill/draw colours. Tint with colour!N for backgrounds.
+% In text:  \textcolor{cvdgold}{…} etc.
+%
+\definecolor{cvdgold}   {RGB}{255,176,  0}   % #ffb000 — Gold
+\definecolor{cvdorange} {RGB}{254, 97,  0}   % #fe6100 — Orange
+\definecolor{cvdmagenta}{RGB}{220, 38,127}   % #dc267f — Magenta
+\definecolor{cvdviolet} {RGB}{120, 94,240}   % #785ef0 — Violet
+\definecolor{cvdblue}   {RGB}{100,143,255}   % #648fff — Blue
 
 % CVD-safe changebar colour: IBM Magenta-50 #EE538B
 % Distinguishable from navy/teal/blue family by both hue and luminance
 % across all CVD types (protanopia, deuteranopia, tritanopia).
 \definecolor{ufochanged}{RGB}{238,83,139}
 
-% \ufoAddVis{text} / \ufoDelVis{text} — visual-only variants for use inside
-% TikZ node text, where \zsavepos is unreliable and flag assignments are lost
-% to TikZ's deferred group typesetting.  They render the highlight/strikethrough
-% unconditionally (in changebar builds) with no \cbline call.
-% The margin bar is handled separately by \ufoTikzChangebars.
+% ── Block-level changebar mechanism (for ::: changed / added / deleted divs) ──
 %
-% \colorbox silently fails inside TikZ node text (TikZ overrides xcolor's colour
-% mode switching).  Use a nested \tikz inline node with fill= instead — this is
-% TikZ-native and renders correctly inside outer TikZ node content.
-\newcommand{\ufoAddVis}[1]{%
-  \ifufochanges
-    \tikz[baseline=(ufovistmp.base),inner sep=0pt]
-      \node[fill=ufochanged!15,inner sep=0.5pt](ufovistmp){\vphantom{Ag}#1};%
-  \else#1\fi
-}
-\newcommand{\ufoDelVis}[1]{%
-  \ifufochanges\sout{#1}\fi
-}
-
-% \ifufoinframetitle — set true while Beamer typesets the frametitle so that
-% \ufoAdd/\ufoDel suppress \cbline there (\zsavepos is unreliable in that context).
-\newif\ifufoinframetitle
-\ufoinframetitlefalse
-
-% \ifufotitlechanged — set true by \ufoAdd/\ufoDel when they fire inside a
-% frametitle.  The frametitle template checks this after rendering the title
-% text and draws a fixed-position overlay bar at the known frametitle y, then
-% resets the flag.
-\newif\ifufotitlechanged
-\ufotitlechangedfalse
-
-% \ifufoincbblock — set true inside \cbstart..\cbend regions (i.e. ::: changed
-% and ::: deleted blocks) so that \ufoAdd/\ufoDel suppress their own \cbline
-% calls.  Without this, each \ufoDel inside a block increments \thecbcount,
-% which causes \cbend to reference the wrong cb-start-N label and the block
-% bar lands at position 0 instead of alongside the content.
-\newif\ifufoincbblock
-\ufoincbblockfalse
-
-% Counter to give each changebar a unique label pair
-\newcounter{cbcount}
-
-% \cbline{content} — single-line margin bar for inline \ufoAdd/\ufoDel spans.
-% \zsavepos fires AFTER the content so the recorded baseline is the content
-% line itself, not the line above (which is what you get if \zsavepos fires
-% before #1 in a fragile frame where Beamer re-inputs from the .vrb file).
-% Bar spans -9pt (below baseline) to +13pt (above baseline), centred on the
-% content.  Converges correctly after the standard 4-pass xelatex build.
-\newcommand{\cbline}[1]{%
-  \stepcounter{cbcount}%
-  \edef\cbcurrent{\thecbcount}%
-  \edef\cbymid{\the\dimexpr\zposy{cb-inline-\cbcurrent} sp\relax}%
-  \begin{tikzpicture}[remember picture, overlay]
-    \draw[ufochanged, line width=2.5pt, line cap=round]
-      ([xshift=0.85cm, yshift=\dimexpr\cbymid-9pt\relax] current page.south west)
-      --
-      ([xshift=0.85cm, yshift=\dimexpr\cbymid+13pt\relax] current page.south west);
-  \end{tikzpicture}%
-  #1\zsavepos{cb-inline-\cbcurrent}%
-}
-
-% \cbstart / \cbend — block-level changebar spanning a ::: changed or
-% ::: deleted div.
+% Uses zref-savepos to record absolute Y positions at \cbstart and \cbend.
+% A LIFO stack (cbdepth counter + per-depth ID storage) lets nested pairs
+% work correctly: the outer \cbend retrieves its own ID even when inner
+% \cbstart calls have advanced the cbcount counter.
 %
-% Design: uses a dedicated counter \cbblockcount (separate from \cbcount used
-% by \cbline) so that \cbline calls *inside* the block do not corrupt the
-% label lookup.  The open-time counter value is stored in the TeX count register
-% \c@cbstartsnap (a plain integer register, immune to grouping concerns) so
-% \cbend can reference cb-start-blk-N even after the counter has moved on.
+% !! Only works reliably when start and end are on DIFFERENT baselines !!
+% For single-line inline spans use \cbistart / \cbiend instead (see below).
 %
-% Label expansion: \zsavepos does NOT expand its argument before writing;
-% we therefore build the full label string with \edef into \@cbblklabel and
-% call \zsavepos with the macro name — zref-savepos reads it as a string via
-% \@namedef, so the literal token \@cbblklabel IS the label key.  To get a
-% unique key per block we embed \thecbblockcount directly using \edef.
-\newcounter{cbblockcount}
-\newcount\ufocbstartsnap   % plain TeX integer register — not reset by groups
+% Top-of-bar correction: pandoc always emits \cbstart{} as a standalone
+% RawBlock, so a blank line (= \par) follows it before the content block.
+% TeX deposits \parskip glue AFTER the \zsavepos call, so the saved Y is
+% one \parskip above the first bullet.  \cbend corrects for this by storing
+% the natural part of \parskip at \cbstart time and subtracting it when
+% drawing the bar's top endpoint.
+%
+\newcounter{cbcount}   % ever-incrementing unique ID for each \cbstart
+\newcounter{cbdepth}   % current nesting depth (0 = not inside any bar)
+\newdimen\cbpsnat      % scratch dimen — natural part of \parskip at \cbstart
 
 \newcommand{\cbstart}{%
-  \stepcounter{cbblockcount}%
-  \ufocbstartsnap=\value{cbblockcount}%
-  \zsavepos{cb-blk-\thecbblockcount-start}%
-  \ufoincbblocktrue
+  \stepcounter{cbcount}%
+  \stepcounter{cbdepth}%
+  \expandafter\xdef\csname cbid@\thecbdepth\endcsname{\thecbcount}%
+  % Snapshot the natural part of \parskip so \cbend can correct the bar top.
+  \cbpsnat=\parskip
+  \expandafter\xdef\csname cbps@\thecbcount\endcsname{\the\cbpsnat}%
+  \zsavepos{cb-start-\thecbcount}%
 }
 
 \newcommand{\cbend}{%
-  \ufoincbblockfalse
-  \zsavepos{cb-blk-\the\ufocbstartsnap-end}%
-  % Compute y coordinates in pt: zref stores sp (1pt = 65536sp)
-  \edef\cbystart{\the\dimexpr\zposy{cb-blk-\the\ufocbstartsnap-start} sp\relax}%
-  \edef\cbyend{\the\dimexpr\zposy{cb-blk-\the\ufocbstartsnap-end} sp\relax}%
-  \begin{tikzpicture}[remember picture, overlay]
-    % Draw a vertical rule at x = 0.85cm from the left paper edge,
-    % spanning from the \cbend position (bottom) to the \cbstart position (top).
-    \draw[ufochanged, line width=2.5pt, line cap=round]
-      ([xshift=0.85cm, yshift=\cbyend] current page.south west)
-      --
-      ([xshift=0.85cm, yshift=\cbystart] current page.south west);
-  \end{tikzpicture}%
+  \edef\cbcurrent{\csname cbid@\thecbdepth\endcsname}%
+  \zsavepos{cb-end-\cbcurrent}%
+  \addtocounter{cbdepth}{-1}%
+  \ifufochanges%
+    \edef\cbystart{\the\dimexpr\zposy{cb-start-\cbcurrent} sp\relax}%
+    \edef\cbyend{\the\dimexpr\zposy{cb-end-\cbcurrent} sp\relax}%
+    \edef\cbpsval{\csname cbps@\cbcurrent\endcsname}%
+    \begin{tikzpicture}[remember picture, overlay]
+      \draw[ufochanged, line width=2.5pt, line cap=round]
+        ([xshift=0.85cm, yshift=\cbyend] current page.south west)
+        --
+        ([xshift=0.85cm, yshift=\dimexpr\cbystart - \cbpsval\relax]
+          current page.south west);
+    \end{tikzpicture}%
+  \fi%
+}
+
+% ── Inline changebar mechanism (for {.added} / {.deleted} / {.changed} spans) ─
+%
+% Problem: \zsavepos at the start of a list-item paragraph records the Y of
+% the PREVIOUS line (TeX has not yet committed the current line when in
+% horizontal mode at a paragraph's start), so the bar appears one line too high.
+%
+% Solution: both \cbistart and \cbiend save their positions inside \vadjust,
+% which fires AFTER the current line is broken and shipped — giving the correct
+% baseline Y for the line containing the span.  \cbiend reads the position
+% saved by \cbistart (from the previous xelatex pass) and draws the bar.
+% Four xelatex passes (as run by the Makefile) are sufficient to converge.
+%
+% Nesting: same LIFO stack as block bars — cbdepth / cbid@ — so a
+% {.changed} span wrapping {.deleted}+{.added} works without conflict.
+%
+\newcommand{\cbistart}{%
+  \stepcounter{cbcount}%
+  \stepcounter{cbdepth}%
+  \expandafter\xdef\csname cbid@\thecbdepth\endcsname{\thecbcount}%
+  % \leavevmode ensures TeX is in horizontal mode before \zsavepos fires,
+  % so the recorded Y is this line's baseline, not the previous line's.
+  % (At paragraph start, without \leavevmode, zref records the pre-paragraph
+  % vertical position — one line too high.)
+  \leavevmode\zsavepos{cbi-start-\thecbcount}%
+}
+
+\newcommand{\cbiend}{%
+  \edef\cbicurrent{\csname cbid@\thecbdepth\endcsname}%
+  \addtocounter{cbdepth}{-1}%
+  \ifufochanges%
+    \edef\cbiy{\the\dimexpr\zposy{cbi-start-\cbicurrent} sp\relax}%
+    % \vadjust inserts material into the vertical list after the current line.
+    % We draw zero-height material so it does not affect spacing.
+    \vadjust{%
+      \begin{tikzpicture}[remember picture, overlay]
+        \draw[ufochanged, line width=2.5pt, line cap=round]
+          ([xshift=0.85cm,
+            yshift=\dimexpr\cbiy - \dp\strutbox\relax]
+            current page.south west)
+          --
+          ([xshift=0.85cm,
+            yshift=\dimexpr\cbiy + \ht\strutbox\relax]
+            current page.south west);
+      \end{tikzpicture}%
+    }%
+  \fi%
 }
 
 % UFO template colours
@@ -341,46 +391,10 @@
 
 % ── Content slide frametitle ─────────────────────────────────────────────────
 % Pixel measurement: frametitle top ≈ 13.45mm from slide top edge → vskip 1.35cm
-% Paper is 254mm × 142.875mm (Beamer screen geometry).
-% \vskip1.35cm puts text top at 142.875mm - 13.5mm = 129.375mm from page bottom.
-%
-% Changebar for changed titles: \zsavepos is unreliable *inside* the frametitle
-% typesetting group, but is reliable immediately *after* it (we are back in normal
-% vertical list flow).  Strategy:
-%   \cbframetitlestart — called just before the title group; saves the y position
-%                        at the TOP of the title (via \zsavepos) and sets the
-%                        \ifufoinframetitle flag.
-%   \cbframetitleend   — called just after the title group closes; saves the y
-%                        position at the BOTTOM of the title and draws the bar if
-%                        \ifufotitlechanged was set.
-% Both use the dedicated \cbblockcount / \ufocbstartsnap mechanism so they are
-% immune to \cbline counter increments.
-\newcommand{\cbframetitlestart}{%
-  \stepcounter{cbblockcount}%
-  \ufocbstartsnap=\value{cbblockcount}%
-  \zsavepos{cb-title-\the\ufocbstartsnap-start}%
-}
-\newcommand{\cbframetitleend}{%
-  \zsavepos{cb-title-\the\ufocbstartsnap-end}%
-  \ifufotitlechanged
-    \edef\cbystart{\the\dimexpr\zposy{cb-title-\the\ufocbstartsnap-start} sp\relax}%
-    \edef\cbyend{\the\dimexpr\zposy{cb-title-\the\ufocbstartsnap-end} sp\relax}%
-    \begin{tikzpicture}[remember picture, overlay]
-      \draw[ufochanged, line width=2.5pt, line cap=round]
-        ([xshift=0.85cm, yshift=\dimexpr\cbyend-3pt\relax] current page.south west)
-        --
-        ([xshift=0.85cm, yshift=\dimexpr\cbystart+3pt\relax] current page.south west);
-    \end{tikzpicture}%
-    \global\ufotitlechangedfalse
-  \fi
-}
 \setbeamertemplate{frametitle}{%
   \nointerlineskip
   \vskip1.35cm%
-  \cbframetitlestart
-  {\ufoinframetitletrue\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
-  \ufoinframetitlefalse
-  \cbframetitleend
+  {\usebeamerfont{frametitle}\titlefont\usebeamercolor[fg]{frametitle}\insertframetitle}%
   \vskip0.2cm%
 }
 
@@ -495,30 +509,6 @@
 % [fragile] frames and TikZ overlay frames).
 \newenvironment{instruction}{\setbox0\vbox\bgroup\hsize\textwidth}{\egroup}
 
-% ── Deleted block environment ─────────────────────────────────────────────────
-% ::: deleted divs in markdown compile to \begin{ufoDeletedBlock}...\end{ufoDeletedBlock}
-% via changebar-filter.lua.
-%
-% Behaviour:
-%   \ifufochanges (changebar/review build): content is rendered in faded magenta
-%     with a margin changebar. The Lua filter (changebar-filter.lua) has already
-%     wrapped every bullet's inline text in \sout{} at the Pandoc AST level.
-%   otherwise (final build): content is silently discarded — same vbox trick as
-%     \begin{instruction}, safe inside any beamer frame.
-\newenvironment{ufoDeletedBlock}{%
-  \ifufochanges
-    \cbstart{}%
-  \else
-    \setbox0\vbox\bgroup\hsize\textwidth
-  \fi
-}{%
-  \ifufochanges
-    \cbend{}%
-  \else
-    \egroup
-  \fi
-}
-
 % ── Change key + abducted document ───────────────────────────────────────────
 % \ufochangekey  — declare in 00-title.md's raw LaTeX block (outside any frame)
 % to add a change-indicator graphic to the title page.
@@ -566,9 +556,6 @@
   \fi%
 }
 
-\newif\ifufochanges
-\ufochangesfalse
-
 % \ufochangekeyifenabled — called from the title page template.
 % Defined as a standalone command so the \if..\fi pair lives outside
 % Beamer's \setbeamertemplate token scanner, which misreads bare conditionals.
@@ -577,22 +564,6 @@
 }
 
 \newcommand{\ufochangekey}{\ufochangestrue}
-
-% \ufoTikzChangebars{bars} — draws changebar rules in a standalone overlay
-% tikzpicture, conditional on \ifufochanges. The \ifufochanges..\fi pair lives
-% inside this named command so it is never seen by TikZ's or Beamer's token
-% pre-scanners.
-% Usage (in a raw latex block, after \end{tikzpicture}):
-%   \ufoTikzChangebars{
-%     \draw[ufochanged, line width=2.5pt, line cap=round] ... -- ...;
-%   }
-\DeclareRobustCommand{\ufoTikzChangebars}[1]{%
-  \ifufochanges
-    \begin{tikzpicture}[remember picture, overlay]
-      #1
-    \end{tikzpicture}%
-  \fi
-}
 
 \newcommand{\ufochangekeydraw}{%
   \begin{tikzpicture}[remember picture, overlay]
@@ -644,55 +615,44 @@
       ([xshift= 1.2cm,  yshift= 0.90cm]doc.center);
 
     % ── 3. Legend chip ────────────────────────────────────────────────────────
-    % Four rows: margin changebar / change highlight ring /
-    %            change highlight glow / removed text.
-    % Centre at (76%, 57%) from page NW; height ±0.76cm.
+    % Three rows: margin changebar / change highlight ring / inline sample.
+    % Centre at (76%, 57%) from page NW; height ±0.57cm.
     \node[anchor=center,
           xshift= 0.76\paperwidth,
           yshift=-0.575\paperheight] (leg) at (current page.north west) {};
 
-    % White pill background (four rows)
+    % White pill background (three rows)
     \draw[fill=white, draw=ufonavydark!25, line width=0.4pt,
           rounded corners=3pt]
-      ([xshift=-1.55cm, yshift=-0.76cm]leg.center)
+      ([xshift=-1.55cm, yshift=-0.57cm]leg.center)
       rectangle
-      ([xshift= 1.55cm, yshift= 0.76cm]leg.center);
+      ([xshift= 1.55cm, yshift= 0.57cm]leg.center);
 
     % Row 1: margin changebar swatch + label
     \draw[ufochanged, line width=2.5pt, line cap=round]
-      ([xshift=-1.35cm, yshift= 0.48cm]leg.center)
-      -- ([xshift=-1.35cm, yshift= 0.66cm]leg.center);
+      ([xshift=-1.35cm, yshift= 0.29cm]leg.center)
+      -- ([xshift=-1.35cm, yshift= 0.47cm]leg.center);
     \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
           text=ufonavydark]
-      at ([xshift=-1.18cm, yshift= 0.57cm]leg.center)
+      at ([xshift=-1.18cm, yshift= 0.38cm]leg.center)
       {margin changebar};
 
     % Row 2: change highlight ring swatch + label
     \draw[ufochanged, line width=1.4pt, rounded corners=2pt,
           dashed, dash pattern=on 2.5pt off 1.5pt]
-      ([xshift=-1.45cm, yshift= 0.10cm]leg.center)
+      ([xshift=-1.45cm, yshift=-0.09cm]leg.center)
       rectangle
-      ([xshift=-1.05cm, yshift= 0.28cm]leg.center);
+      ([xshift=-1.05cm, yshift= 0.09cm]leg.center);
     \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
           text=ufonavydark]
-      at ([xshift=-0.98cm, yshift= 0.19cm]leg.center)
+      at ([xshift=-0.98cm, yshift= 0.00cm]leg.center)
       {change highlight ring};
 
-    % Row 3: change highlight glow swatch + label
-    % Filled dot with semi-transparent outer glow (postaction).
-    \draw[ufochanged, fill=ufochanged,
-          postaction={draw, ufochanged!35, line width=4pt}]
-      ([xshift=-1.25cm, yshift=-0.19cm]leg.center) circle (3pt);
+    % Row 3: inline sample — \sout{deleted} \ufoAdded{added} text
     \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
           text=ufonavydark]
-      at ([xshift=-0.98cm, yshift=-0.19cm]leg.center)
-      {change highlight glow};
-
-    % Row 4: removed text — struck-out sample
-    \node[anchor=west, font=\sffamily\fontsize{5.5}{7}\selectfont,
-          text=ufonavydark]
-      at ([xshift=-1.45cm, yshift=-0.57cm]leg.center)
-      {\ufoDel{removed text}};
+      at ([xshift=-1.45cm, yshift=-0.38cm]leg.center)
+      {\sout{deleted} \ufoAdded{added} text};
 
   \end{tikzpicture}%
 }

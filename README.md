@@ -15,12 +15,40 @@ output/              ← built PDFs land here (gitignored)
 
 Install these once on your machine:
 
-| Tool | How to get it |
-|---|---|
-| **pandoc** ≥ 3.x | `brew install pandoc` · [pandoc.org](https://pandoc.org/installing.html) |
-| **XeLaTeX** | `brew install --cask mactex-no-gui` (macOS) · `apt install texlive-xetex` (Linux) |
-| **Trebuchet MS** + **Arial** | Ships with macOS · Linux: `apt install ttf-mscorefonts-installer` |
-| **Python 3** | `brew install python` · ships with most systems |
+| Tool | Version | How to get it |
+|---|---|---|
+| **pandoc** | ≥ 3.x | `brew install pandoc` · [pandoc.org](https://pandoc.org/installing.html) |
+| **XeLaTeX** | any recent | `brew install --cask mactex-no-gui` (macOS) · `apt install texlive-xetex` (Linux) |
+| **Trebuchet MS** + **Arial** | — | Ships with macOS · Linux: `apt install ttf-mscorefonts-installer` |
+| **Python 3** | ≥ 3.8 | `brew install python` · ships with most systems |
+| **Node.js** | ≥ 18 | `brew install node` · [nodejs.org](https://nodejs.org/) |
+| **@mermaid-js/mermaid-cli** | ≥ 12 | `npm install -g --allow-scripts=puppeteer @mermaid-js/mermaid-cli` |
+
+### Verify your environment
+
+Run this from the repo root to check everything is in place:
+
+```bash
+pandoc --version          # need ≥ 3.0
+xelatex --version         # need any recent TeXLive
+mmdc --version            # need ≥ 12.0.0
+python3 --version         # need ≥ 3.8
+node --version            # need ≥ 18
+```
+
+### Mermaid note
+
+`@mermaid-js/mermaid-cli` uses [Puppeteer](https://pptr.dev/) to render diagrams headlessly.
+The `--allow-scripts=puppeteer` flag permits Puppeteer's post-install script to download
+its bundled Chromium. This is a one-time download (~170 MB) and is required for diagram
+rendering. On Linux you may also need:
+
+```bash
+# Debian/Ubuntu — Chromium system dependencies
+sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+  libcups2 libxkbcommon0 libxcomposite1 libxdamage1 \
+  libxfixes3 libxrandr2 libgbm1 libasound2
+```
 
 ---
 
@@ -105,6 +133,23 @@ git push origin main
 
 Open a pull request from your fork back to `OpenLiberty/ufo`.
 
+### Commit conventions
+
+| Prefix | Use for |
+|:-------|:--------|
+| `feat:` | New UFO or new theme capability |
+| `fix:` | Correction to an existing UFO or theme bug |
+| `theme:` | Changes to `themes/ufo-beamer/` (filters, theme, build rules, examples) |
+| `docs:` | README, AGENTS.md, or other documentation only |
+| `chore:` | Housekeeping (renames, gitignore, CI) |
+
+**AI attribution** — when a commit includes AI-assisted content, add this trailer
+(use the exact product name and version shown in the Bob UI):
+
+```
+Co-authored-by-AI: IBM Bob 2.0.5
+```
+
 ---
 
 ## Build targets
@@ -124,7 +169,7 @@ Open a pull request from your fork back to `OpenLiberty/ufo`.
 
 When submitting a **revised** UFO, highlight what changed so reviewers can scan quickly.
 Three markup types are available; see the worked example at
-[`themes/ufo-beamer/examples/changebar-demo/`](themes/ufo-beamer/examples/changebar-demo/)
+[`themes/ufo-beamer/examples/changebars/`](themes/ufo-beamer/examples/changebars/)
 for a rendered PDF showing each pattern.
 
 ### Changed bullets or paragraphs
@@ -242,13 +287,16 @@ ufo/
 │       ├── beamertheme.tex      ← Beamer theme (colours, layout, changebar commands)
 │       ├── changebar-filter.lua ← Pandoc filter: ::: changed, {.added}, {.deleted}
 │       ├── instruction-filter.lua
+│       ├── table-filter.lua     ← Pandoc filter: pipe tables → \tabular
 │       ├── epics.sh             ← epic validation + slug/link generation
 │       ├── epic-prefixes.conf   ← recognised epic prefixes
 │       ├── check-overflow.py    ← post-build slide overflow checker
 │       ├── generate-handouts.py ← notes/handout/speakernotes PDF generator
 │       ├── *.png                ← background images
 │       └── examples/
-│           └── changebar-demo/  ← worked example of all changebar patterns
+│           ├── changebars/      ← worked example of all changebar patterns
+│           ├── mermaid-diagrams/ ← Mermaid diagram type examples
+│           └── tables/          ← pipe table patterns
 ├── templates/
 │   └── ufo/                     ← copy this to start a new UFO
 │       ├── Makefile
@@ -276,7 +324,7 @@ SOURCES = $(SLIDES_DIR)/00-title.md \
           $(SLIDES_DIR)/02-feature-design.md \
           $(SLIDES_DIR)/03-quality.md
 
-# EXTRA_VARS_TEX = \ufochangestrue   ← uncomment for a revised UFO
+# WITH_CHANGES = true   ← uncomment for a revised UFO
 
 include $(shell git rev-parse --show-toplevel)/themes/ufo-beamer/ufo-beamer.mk
 ```
@@ -294,3 +342,40 @@ include $(shell git rev-parse --show-toplevel)/themes/ufo-beamer/ufo-beamer.mk
 | Section title | Trebuchet MS 54 pt white, centred |
 | Page number | 15 pt, `#BAC0D4` (content) · `#C6E000` lime (section) · suppressed (title) |
 | Change highlight | IBM Magenta-50 `#EE538B` — CVD-safe |
+
+---
+
+## Colour palette
+
+All named colours are available in `beamertheme.tex`. Use them in TikZ diagrams
+and slide content — do not invent ad-hoc RGB values.
+
+### Theme colours
+
+| Name | Hex | Role |
+|---|---|---|
+| `ufonavydark` | `#20203E` ![#20203E](https://via.placeholder.com/12/20203E/20203E.png) | Title text, section background, node borders |
+| `ufoteal` | `#4C577D` ![#4C577D](https://via.placeholder.com/12/4C577D/4C577D.png) | Frametitle, bullets, secondary borders |
+| `ufolime` | `#C6E000` ![#C6E000](https://via.placeholder.com/12/C6E000/C6E000.png) | Page number on dark slides |
+| `ufopagenumber` | `#BAC0D4` ![#BAC0D4](https://via.placeholder.com/12/BAC0D4/BAC0D4.png) | Page number on content slides |
+| `ufochanged` | `#EE538B` ![#EE538B](https://via.placeholder.com/12/EE538B/EE538B.png) | Change markup — IBM Magenta-50, CVD-safe |
+| `ufolink` | `#0066CC` ![#0066CC](https://via.placeholder.com/12/0066CC/0066CC.png) | Hyperlinks |
+
+### CVD-safe categorical palette
+
+Use these for data series, diagram node categories, and any context where
+colour alone conveys meaning. They are distinguishable by people with all
+common forms of colour vision deficiency (protanopia, deuteranopia,
+tritanopia) and remain separable in greyscale because they differ in both
+**hue and luminance**. Source: [IBM / Wong 2011](https://www.color-hex.com/color-palette/1044488).
+
+| Name | Hex | Swatch | Luminance | Role |
+|---|---|---|---|---|
+| `cvdgold` | `#ffb000` | ![#ffb000](https://via.placeholder.com/12/ffb000/ffb000.png) | High | Warning / caution |
+| `cvdorange` | `#fe6100` | ![#fe6100](https://via.placeholder.com/12/fe6100/fe6100.png) | Mid-high | Second series |
+| `cvdmagenta` | `#dc267f` | ![#dc267f](https://via.placeholder.com/12/dc267f/dc267f.png) | Mid | Error / removal |
+| `cvdviolet` | `#785ef0` | ![#785ef0](https://via.placeholder.com/12/785ef0/785ef0.png) | Mid-low | Feature / new |
+| `cvdblue` | `#648fff` | ![#648fff](https://via.placeholder.com/12/648fff/648fff.png) | Mid | Info / primary |
+
+> **Do not** use `ufochanged` for data series — it is reserved exclusively for
+> change markup. Use `cvdmagenta` instead when you need a magenta data category.

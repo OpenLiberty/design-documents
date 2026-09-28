@@ -404,6 +404,42 @@ TikZ tint syntax (`colour!N`) works on all named colours:
 
 ---
 
+## Commit conventions
+
+Use conventional commit prefixes and attribute AI assistance when applicable.
+
+### Prefixes
+
+| Prefix | Use for |
+|:-------|:--------|
+| `feat:` | New UFO or new theme capability |
+| `fix:` | Correction to an existing UFO or theme bug |
+| `theme:` | Changes to `themes/ufo-beamer/` (filters, theme, build rules, examples) |
+| `docs:` | README, AGENTS.md, or other documentation only |
+| `chore:` | Housekeeping (renames, gitignore, CI) |
+
+### AI attribution
+
+When a commit includes AI-generated or AI-assisted content, add a trailer:
+
+```
+Co-authored-by-AI: IBM Bob 2.0.5
+```
+
+Use the exact product name and version shown in the Bob UI. Place the trailer
+as the last line of the commit message body, after a blank line:
+
+```
+theme: add table-filter.lua; reorganise examples; update AGENTS.md
+
+Converts Pandoc pipe tables to \tabular for Beamer compatibility.
+...
+
+Co-authored-by-AI: IBM Bob 2.0.5
+```
+
+---
+
 ## What not to do
 
 - Do not edit files in `themes/ufo-beamer/` for a single UFO's needs

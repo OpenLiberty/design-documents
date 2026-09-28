@@ -14,10 +14,12 @@ This section details how the feature is surfaced to developers, administrators, 
   - Announce the new `propagation` attribute on `<wsAtomicTransaction/>` enabling conditional WS-AT propagation
 - **Open Liberty Documentation**:
   - Update `wsAtomicTransaction-1.2` feature doc with configuration examples and WSDL policy discovery details
-  - Update client behaviour table to document the new `propagation` values and their effects
+  - Update client behaviour table with the new `propagation` values and their effects
 - **Target Audience**:
-  - Enterprise Java developers / operations architects migrating JAX-WS workloads from tWAS to Open Liberty
-  - [EE developers propagating transactions across mixed transactional/non-transactional web services]{.added}
+::: changed
+  - Enterprise Java developers and architects migrating JAX-WS workloads from tWAS to Open Liberty
+  - Developers needing selective transaction propagation across mixed transactional/non-transactional endpoints
+:::
 
 ::: notes
 Enablement will be delivered through standard Open Liberty release blogs and feature documentation on openliberty.io, specifically calling out the closure of the tWAS migration gap.
@@ -25,15 +27,17 @@ Enablement will be delivered through standard Open Liberty release blogs and fea
 
 # Java APIs/SPIs
 
+::: changed
 - **No New Public Java APIs or SPIs**:
-  - Behavior is fully integrated into existing [JAX-WS / Jakarta XML Web Services]{.added} runtime and `wsAtomicTransaction-1.2` feature internals
-- [**Standard JAX-WS Programming Model Preserved**:]{.deleted} [**Standard JAX-WS / Jakarta XML Web Services Programming Model Preserved**:]{.added}
-  - Developers continue using standard `@WebServiceRef`, [`javax.xml.ws.Service` / `jakarta.xml.ws.Service`]{.added}, or generated JAX-WS [/ Jakarta XML Web Services]{.added} client proxies without proprietary extensions
+  - Behavior is fully integrated into existing JAX-WS / Jakarta XML Web Services runtime and `wsAtomicTransaction-1.2` feature internals
+- **Standard JAX-WS / Jakarta XML Web Services Programming Model Preserved**:
+  - Developers continue using standard `@WebServiceRef`, `javax.xml.ws.Service` / `jakarta.xml.ws.Service`, or generated JAX-WS / Jakarta XML Web Services client proxies without proprietary extensions
+:::
 - **Standard WS-Policy Annotations**:
   - Supports standard `@Policy` / `@PolicySets` or direct WSDL `<wsp:Policy>` / `<wsat:ATAssertion>` attachments
 
 ::: notes
-No proprietary API or SPI is introduced. The feature operates transparently underneath the standard JAX-WS [/ Jakarta XML Web Services]{.added} client runtime, preserving portable Java EE / Jakarta EE code.
+No proprietary API or SPI is introduced. The feature operates transparently underneath the standard JAX-WS / Jakarta XML Web Services client runtime, preserving portable Java EE / Jakarta EE code.
 :::
 
 # RESTful API Design
@@ -52,11 +56,7 @@ This slide is N/A. State so briefly and move on — do not dwell.
   - `propagation="always|conditional|never"` (Default: `always`)
 - **Configuration Modes**:
   - **Zero-Migration Default**: `<wsAtomicTransaction/>` (`propagation="always"`)
-  - **Opt-In Conditional Mode**:
-
-::: changed
-    `<wsAtomicTransaction propagation="conditional"/>`
-:::
+  - **Opt-In Conditional Mode**: `<wsAtomicTransaction propagation="conditional"/>`
   - **Outbound Suppression Mode**: `<wsAtomicTransaction propagation="never"/>`
 - **Lifecycle Support**: Compatible with `server pause` and `server resume`
 

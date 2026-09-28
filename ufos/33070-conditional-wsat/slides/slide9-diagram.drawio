@@ -1,0 +1,162 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Feature Design: Runtime Interception">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ── Nodes ─────────────────────────────────────────────────────── -->
+
+        <!-- A: Outbound Web Services Request (R2, far left) -->
+        <mxCell id="A" value="Outbound Web&#xa;Services Request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- B: global txn active? (R2, new — magenta dashed diamond) -->
+        <mxCell id="B" value="global txn&#xa;active?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff0f5;strokeColor=#EE538B;dashed=1;dashPattern=8 4;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="230" y="360" width="140" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- C: wsAtomicTxn-1.2 configured? (R1) -->
+        <mxCell id="C" value="wsAtomicTxn-1.2&#xa;configured?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="430" y="160" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- D: Check Config: propagation? (R1, blue feature diamond) -->
+        <mxCell id="D" value="Check Config:&#xa;propagation?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#1192e8;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="660" y="160" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- E: Attach WS-AT wscoor:Context (R1) -->
+        <mxCell id="E" value="Attach WS-AT&#xa;wscoor:Context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="980" y="180" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- G: Target WSDL: ATAssertion? (R1.5, blue feature diamond) -->
+        <mxCell id="G" value="Target WSDL:&#xa;ATAssertion?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#1192e8;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="830" y="270" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- F: Transmit HTTP/SOAP (R2, far right) -->
+        <mxCell id="F" value="Transmit&#xa;HTTP/SOAP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="380" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- H: ATAssertion in WSDL? (R3, new — magenta dashed diamond) -->
+        <mxCell id="H" value="ATAssertion&#xa;in WSDL?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff0f5;strokeColor=#EE538B;dashed=1;dashPattern=8 4;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="360" y="570" width="140" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- I: ATAssertion optional? (R3, new — magenta dashed diamond) -->
+        <mxCell id="I" value="ATAssertion&#xa;optional?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff0f5;strokeColor=#EE538B;dashed=1;dashPattern=8 4;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="630" y="570" width="140" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- J: WSATException: no active txn (R3) -->
+        <mxCell id="J" value="WSATException:&#xa;no active txn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="870" y="590" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ── Arrows ──────────────────────────────────────────────────────── -->
+
+        <!-- 1: A → B -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="A" target="B" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 2: B → C  (yes) -->
+        <mxCell id="e2" value="yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="B" target="C" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="280" />
+              <mxPoint x="510" y="280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 3: C → D  (yes) -->
+        <mxCell id="e3" value="yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="C" target="D" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 4: D → E  (always / default) -->
+        <mxCell id="e4" value="always / default" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="D" target="E" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 5: D → G  (conditional) -->
+        <mxCell id="e5" value="conditional" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="D" target="G" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 6: G → E  (yes) -->
+        <mxCell id="e6" value="yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="G" target="E" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 7: G → F  (no) -->
+        <mxCell id="e7" value="no" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="G" target="F" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 8: E → F -->
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="E" target="F" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 9: C → F  (no — long bypass above) -->
+        <mxCell id="e9" value="no" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="C" target="F" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="100" />
+              <mxPoint x="1290" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 11: B → H  (no) -->
+        <mxCell id="e11" value="no" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="B" target="H" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="510" />
+              <mxPoint x="430" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 12: H → I  (yes) -->
+        <mxCell id="e12" value="yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="H" target="I" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 13: I → J  (no / required) -->
+        <mxCell id="e13" value="no / required" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="I" target="J" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 14: H → F  (no) -->
+        <mxCell id="e14" value="no" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="H" target="F" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="720" />
+              <mxPoint x="1180" y="720" />
+              <mxPoint x="1180" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 15: I → F  (yes / optional) -->
+        <mxCell id="e15" value="yes / optional" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="I" target="F" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="740" />
+              <mxPoint x="1210" y="740" />
+              <mxPoint x="1210" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

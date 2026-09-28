@@ -143,12 +143,15 @@ Open a pull request from your fork back to `OpenLiberty/ufo`.
 | `docs:` | README, AGENTS.md, or other documentation only |
 | `chore:` | Housekeeping (renames, gitignore, CI) |
 
-**AI attribution** — when a commit includes AI-assisted content, add this trailer
-(use the exact product name and version shown in the Bob UI):
+**AI attribution** — when a commit includes AI-assisted content, add a trailer
+with the tool name and version as shown in the tool's own UI:
 
 ```
-Co-authored-by-AI: IBM Bob 2.0.5
+Co-authored-by-AI: <Tool Name> <version>
 ```
+
+For example: `Co-authored-by-AI: IBM Bob 2.0.5`, `Co-authored-by-AI: GitHub Copilot 1.256`,
+`Co-authored-by-AI: Claude 3.7 Sonnet`, `Co-authored-by-AI: ChatGPT 4o`.
 
 ---
 

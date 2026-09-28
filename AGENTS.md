@@ -420,14 +420,25 @@ Use conventional commit prefixes and attribute AI assistance when applicable.
 
 ### AI attribution
 
-When a commit includes AI-generated or AI-assisted content, add a trailer:
+When a commit includes AI-generated or AI-assisted content, add a trailer
+identifying the tool and version:
+
+```
+Co-authored-by-AI: <Tool Name> <version>
+```
+
+Examples:
 
 ```
 Co-authored-by-AI: IBM Bob 2.0.5
+Co-authored-by-AI: GitHub Copilot 1.256
+Co-authored-by-AI: Claude 3.7 Sonnet
+Co-authored-by-AI: ChatGPT 4o
 ```
 
-Use the exact product name and version shown in the Bob UI. Place the trailer
-as the last line of the commit message body, after a blank line:
+Use the product name and version as shown in the tool's own UI or
+documentation. Place the trailer as the last line of the commit message
+body, after a blank line:
 
 ```
 theme: add table-filter.lua; reorganise examples; update AGENTS.md

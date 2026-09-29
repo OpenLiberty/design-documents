@@ -3,6 +3,6 @@ SOURCES = $(SLIDES_DIR)/00-title.md \
           $(SLIDES_DIR)/02-externals-design.md \
           $(SLIDES_DIR)/03-quality.md
 
-WITH_CHANGES = true
+# WITH_CHANGES = true
 
 include $(shell git rev-parse --show-toplevel)/themes/ufo-beamer/ufo-beamer.mk

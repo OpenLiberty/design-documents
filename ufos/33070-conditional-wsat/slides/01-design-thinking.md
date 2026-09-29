@@ -41,7 +41,7 @@ WS-AT coordinates distributed transactions across JAX-WS and Jakarta XML Web Ser
 :::
 
 ::: notes
-Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists. The need is for policy-driven propagation based on the target service's WSDL assertion.
+Unconditional propagation breaks communication with non-transactional downstream services when an active JTA transaction exists.
 
 XML namespace prefixes used in the WSDL snippet:
 - wsp: WS-Policy namespace (http://schemas.xmlsoap.org/ws/2004/09/policy or http://www.w3.org/ns/ws-policy), defining policy containers and assertion attributes like wsp:Optional.
@@ -113,22 +113,22 @@ With propagation="conditional", Liberty inspects the endpoint policy engine. If 
 With propagation="never", outbound WS-AT context is never attached. If the target endpoint's WSDL declares ATAssertion as required (wsat:ATAssertion wsp:Optional="false"), the call will fail with an exception — this mirrors the behaviour when wsAtomicTransaction-1.2 is not enabled at all.
 :::
 
-# Feature Design: Dispatch
+# Feature Design: Runtime Interception
 
 ::: changed
 ## Active transaction
 
-| WS-AT Config       | Target WSDL `ATAssertion`? | Outcome                        |
-|:------------------:|:--------------------------:|:-------------------------------|
-| WS-AT not enabled  | no                         | transmit SOAP request          |
-| WS-AT not enabled  | yes (optional)             | transmit SOAP request          |
-| WS-AT not enabled  | yes (required)             | throw `WSATException`          |
-| `always` (default) | —                          | transmit SOAP + WS-AT context  |
-| `never`            | no                         | transmit SOAP request          |
-| `never`            | yes (optional)             | transmit SOAP request          |
-| `never`            | yes (required)             | throw `WSATException`          |
-| `conditional`      | no                         | transmit SOAP request          |
-| `conditional`      | yes (optional or required) | transmit SOAP + WS-AT context  |
+| WS-AT Config       | Target WSDL `ATAssertion`? | Outcome                       |
+| :------------------:| :--------------------------:| :------------------------------|
+| WS-AT not enabled  | no                         | transmit SOAP request         |
+| WS-AT not enabled  | yes (optional)             | transmit SOAP request         |
+| WS-AT not enabled  | yes (required)             | throw `WSATException`         |
+| `never`            | no                         | transmit SOAP request         |
+| `never`            | yes (optional)             | transmit SOAP request         |
+| `never`            | yes (required)             | throw `WSATException`         |
+| `conditional`      | no                         | transmit SOAP request         |
+| `conditional`      | yes (optional or required) | transmit SOAP + WS-AT context |
+| `always` (default) | —                          | transmit SOAP + WS-AT context |
 
 ## No active transaction
 
@@ -140,7 +140,7 @@ With propagation="never", outbound WS-AT context is never attached. If the targe
 :::
 
 ::: notes
-Active transaction: if wsAtomicTransaction-1.2 is not configured, or the target WSDL has no ATAssertion, the request proceeds as plain SOAP. When propagation="never", WS-AT context is never attached — but if the target declares ATAssertion as required, the call still throws (same behaviour as feature not enabled). Headers are only attached when the feature is active, propagation is "always" or "conditional", and (for conditional) the target WSDL declares ATAssertion.
+Active transaction: if wsAtomicTransaction-1.2 is not enabled, or the target WSDL has no ATAssertion, the request proceeds as plain SOAP. When propagation="never", WS-AT context is never attached — but if the target declares ATAssertion as required, the call still throws (same behaviour as feature not enabled). Headers are only attached when the feature is active, propagation is "always" or "conditional", and (for conditional) the target WSDL declares ATAssertion.
 
 No active transaction: ATAssertion optional or absent — plain SOAP. ATAssertion required — exception, because there is no transaction to propagate.
 :::

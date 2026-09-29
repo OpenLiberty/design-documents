@@ -16,10 +16,8 @@ This section details how the feature is surfaced to developers, administrators, 
   - Update `wsAtomicTransaction-1.2` feature doc with configuration examples and WSDL policy discovery details
   - Update client behaviour table with the new `propagation` values and their effects
 - **Target Audience**:
-::: changed
   - Enterprise Java developers and architects migrating JAX-WS workloads from tWAS to Open Liberty
-  - Developers needing selective transaction propagation across mixed transactional/non-transactional endpoints
-:::
+  - [Developers needing selective transaction propagation across]{.added} [mixed transactional/non-transactional endpoints]{.added}
 
 ::: notes
 Enablement will be delivered through standard Open Liberty release blogs and feature documentation on openliberty.io, specifically calling out the closure of the tWAS migration gap.
@@ -29,21 +27,21 @@ Enablement will be delivered through standard Open Liberty release blogs and fea
 
 ::: changed
 - **No New Public Java APIs or SPIs**:
-  - Behavior is fully integrated into existing JAX-WS / Jakarta XML Web Services runtime and `wsAtomicTransaction-1.2` feature internals
-- **Standard JAX-WS / Jakarta XML Web Services Programming Model Preserved**:
-  - Developers continue using standard `@WebServiceRef`, `javax.xml.ws.Service` / `jakarta.xml.ws.Service`, or generated JAX-WS / Jakarta XML Web Services client proxies without proprietary extensions
+  - Behavior is fully integrated into existing Java API / Jakarta XML Web Services runtime and `wsAtomicTransaction-1.2` feature internals
+- **Standard Java API / Jakarta XML Web Services Programming Model Preserved**:
+  - Developers continue using standard `@WebServiceRef`, `javax.xml.ws.Service` / `jakarta.xml.ws.Service`, or generated Java API / Jakarta XML Web Services client proxies without proprietary extensions
 :::
 - **Standard WS-Policy Annotations**:
   - Supports standard `@Policy` / `@PolicySets` or direct WSDL `<wsp:Policy>` / `<wsat:ATAssertion>` attachments
 
 ::: notes
-No proprietary API or SPI is introduced. The feature operates transparently underneath the standard JAX-WS / Jakarta XML Web Services client runtime, preserving portable Java EE / Jakarta EE code.
+No proprietary API or SPI is introduced. The feature operates transparently underneath the standard [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} client runtime, preserving portable Java EE / Jakarta EE code.
 :::
 
 # RESTful API Design
 
 - **N/A — Not Applicable**:
-  - This capability pertains exclusively to SOAP / JAX-WS and WS-AtomicTransaction protocols
+  - This capability pertains exclusively to SOAP, [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added}, and WS-AtomicTransaction protocols
   - No RESTful endpoints or HTTP management interfaces are introduced
 
 ::: instruction

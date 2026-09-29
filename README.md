@@ -307,7 +307,7 @@ ufo/
 │       └── slides/
 │           ├── 00-title.md
 │           ├── 01-design-thinking.md
-│           ├── 02-feature-design.md
+│           ├── 02-externals-design.md
 │           └── 03-quality.md
 ├── output/                      ← built PDFs (gitignored)
 └── <feature>/                   ← submitted UFOs (same structure as templates/ufo/)
@@ -324,7 +324,7 @@ and `PDF_PREFIX`, then include the shared rules:
 ```makefile
 SOURCES = $(SLIDES_DIR)/00-title.md \
           $(SLIDES_DIR)/01-design-thinking.md \
-          $(SLIDES_DIR)/02-feature-design.md \
+          $(SLIDES_DIR)/02-externals-design.md \
           $(SLIDES_DIR)/03-quality.md
 
 # WITH_CHANGES = true   ← uncomment for a revised UFO

@@ -501,7 +501,7 @@ def main():
     slide_files = [
         "slides/00-title.md",
         "slides/01-design-thinking.md",
-        "slides/02-feature-design.md",
+        "slides/02-externals-design.md",
         "slides/03-quality.md"
     ]
 

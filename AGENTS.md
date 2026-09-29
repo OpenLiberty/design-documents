@@ -163,7 +163,7 @@ Every UFO Makefile must set `SOURCES` then include the shared rules:
 ```makefile
 SOURCES = $(SLIDES_DIR)/00-title.md \
           $(SLIDES_DIR)/01-design-thinking.md \
-          $(SLIDES_DIR)/02-feature-design.md \
+          $(SLIDES_DIR)/02-externals-design.md \
           $(SLIDES_DIR)/03-quality.md
 
 # Uncomment for a revised UFO — activates change key, -with-changes filename suffix,

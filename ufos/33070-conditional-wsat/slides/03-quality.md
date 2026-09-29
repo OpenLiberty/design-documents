@@ -78,14 +78,12 @@ Performance impact is negligible since CXF caches effective endpoint policies up
 
 # Platform / Cloud Considerations
 
-::: changed
 - **Full Cross-Platform Support**:
   - Runs uniformly across all supported Open Liberty operating systems: Linux (x86_64, ppc64le, s390x), macOS, Windows, and z/OS
-  - Compatible with the same Java SE runtimes supported by the underlying JAX-WS / Jakarta XML Web Services features (Java SE 8+, subject to the feature's platform matrix)
+  - [Compatible with the same Java SE runtimes supported by the underlying JAX-WS / Jakarta XML Web Services features (Java SE 8+, subject to the feature's platform matrix)]{.added}
 - **Cloud & Container Ready**:
   - Stateless outbound evaluation excels in Kubernetes, Red Hat OpenShift, and containerized microservice architectures
-- **Equal support for JAX-WS and Jakarta XML Web Services** across all supported Java SE versions
-:::
+- [**Equal support for JAX-WS and Jakarta XML Web Services** across all supported Java SE versions]{.added}
 
 ::: notes
 Operates identically across all supported OS platforms and Java LTS levels, with complete container and cloud platform portability.
@@ -118,7 +116,7 @@ Serviceability provides clear trace entries indicating whether WS-AT was enabled
 
 # InstantOn
 
-::: added
+::: changed
 - **Potentially InstantOn Compatible**:
   - WS-AT policy resolution structures are stateless per endpoint, but WS-AT is not currently supported in InstantOn; this feature would be compatible with InstantOn checkpoint/restore cycles if/when WS-AT support is added
 - **Dynamic Configuration Tolerance**:

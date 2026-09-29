@@ -25,11 +25,10 @@ Enablement will be delivered through standard Open Liberty release blogs and fea
 
 # Java APIs/SPIs
 
-::: changed
 - **No New Public Java APIs or SPIs**:
-  - Behavior is fully integrated into existing Java API / Jakarta XML Web Services runtime and `wsAtomicTransaction-1.2` feature internals
-- **Standard Java API / Jakarta XML Web Services Programming Model Preserved**:
-  - Developers continue using standard `@WebServiceRef`, `javax.xml.ws.Service` / `jakarta.xml.ws.Service`, or generated Java API / Jakarta XML Web Services client proxies without proprietary extensions
+  - Behavior is fully integrated into existing [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} runtime and `wsAtomicTransaction-1.2` feature internals
+- **Standard [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} Programming Model Preserved**:
+  - Developers continue using standard `@WebServiceRef`, `javax.xml.ws.Service` [/ `jakarta.xml.ws.Service`]{.added}, or generated [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} client proxies without proprietary extensions
 :::
 - **Standard WS-Policy Annotations**:
   - Supports standard `@Policy` / `@PolicySets` or direct WSDL `<wsp:Policy>` / `<wsat:ATAssertion>` attachments

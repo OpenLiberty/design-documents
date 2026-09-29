@@ -5,7 +5,7 @@ This repo contains the UFO toolchain and submitted UFOs for Open Liberty feature
 ```
 themes/ufo-beamer/   ← Beamer theme, build scripts, Lua filters
 templates/ufo/       ← blank UFO to copy for a new feature
-<feature>/           ← submitted UFOs (e.g. 33070-conditional-wsat)
+<feature>/           ← submitted UFOs (e.g. 33070-conditional-ws-at)
 output/              ← built PDFs land here (gitignored)
 ```
 
@@ -68,8 +68,8 @@ cd ufo
 Copy the template into a top-level directory named `<issue>-<feature-slug>`:
 
 ```bash
-cp -r templates/ufo 33070-conditional-wsat
-cd 33070-conditional-wsat
+cp -r templates/ufo 33070-conditional-ws-at
+cd 33070-conditional-ws-at
 ```
 
 ### 3. Fill in the front matter
@@ -126,7 +126,7 @@ All PDFs land in the repo-level `output/` directory (gitignored).
 ### 6. Open a PR
 
 ```bash
-git add 33070-conditional-wsat
+git add 33070-conditional-ws-at
 git commit -m "feat: add UFO for conditional WSAT (OL-33070)"
 git push origin main
 ```

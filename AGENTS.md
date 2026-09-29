@@ -116,7 +116,7 @@ or technology-specific terminology (JAX-WS, WS-AT, Jakarta, etc.) in examples.
 
 ## Creating a new UFO
 
-1. Copy the template: `cp -r templates/ufo <issue>-<feature>` (e.g. `33070-conditional-wsat`)
+1. Copy the template: `cp -r templates/ufo <issue>-<feature>` (e.g. `33070-conditional-ws-at`)
 2. Edit `slides/00-title.md` front matter — see [Front matter](#front-matter) below.
 3. Fill in `slides/01-design-thinking.md` through `slides/03-quality.md`.
 4. Build from inside the UFO directory: `make slides`

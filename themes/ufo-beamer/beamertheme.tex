@@ -16,13 +16,15 @@
 % Fallback covers the common case of running from inside the UFO directory.
 \graphicspath{{images/}}
 
-% Fonts — match the PPTX slide master:
-%   Trebuchet MS: titles (content slides 40pt, section dividers 54pt, title page 24pt)
-%   Arial:        body text, author lines, URL
+% Fonts — IBM corporate typeface (SIL Open Font Licence, safe to redistribute):
+%   IBM Plex Sans: body text, author lines, URLs, and titles
+%                  IBM's official typeface; see w3.ibm.com/support/article/ibm_plex
+%   IBM Plex Mono: code blocks (fancyvrb verbatim environments)
 \usepackage{fontspec}
-\setmainfont{Arial}
-\setsansfont{Arial}
-\newfontfamily\titlefont{Trebuchet MS}
+\setmainfont{IBM Plex Sans}
+\setsansfont{IBM Plex Sans}
+\newfontfamily\titlefont{IBM Plex Sans}
+\setmonofont{IBM Plex Mono}
 \usepackage{newunicodechar}
 \newunicodechar{⭐}{\ensuremath{\star}}
 

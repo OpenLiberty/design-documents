@@ -146,9 +146,9 @@ flowchart LR
     uc4(["Detect policy\nin target descriptor"])
     uc1 -.->|includes| uc4
   end
-  dev(["👤 Developer"])
-  admin(["👤 Administrator"])
-  migrator(["👤 Migration Engineer"])
+  dev@{ shape: person, label: "Developer" }
+  admin@{ shape: person, label: "Administrator" }
+  migrator@{ shape: person, label: "Migration Engineer" }
   dev --> uc1
   dev --> uc3
   admin --> uc2

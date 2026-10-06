@@ -1,0 +1,15 @@
+# Keep Docker build context small — the Dockerfile installs everything
+# from packages, no COPY/ADD needed.
+output/
+build/
+.git/
+.gitignore
+*.pdf
+*.nav
+*.snm
+*.toc
+*.aux
+*.log
+*.out
+*.tex
+.DS_Store

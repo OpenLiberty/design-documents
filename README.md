@@ -52,6 +52,33 @@ sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 \
 
 ---
 
+## Using Podman
+
+`podman` is a drop-in replacement for `docker` in this repo — the same flags,
+volume syntax, and image name all work unchanged.
+
+The base image (`registry.redhat.io/ubi9/ubi-minimal`) requires Red Hat
+registry authentication.  Log in once before building:
+
+```bash
+podman login registry.redhat.io
+```
+
+Then substitute `podman` for `docker` in any command:
+
+```bash
+# Build the image
+podman build -t ufo-builder .
+
+# Build slides from inside a UFO directory
+podman run --rm -v "$PWD":/workspace ufo-builder make slides
+
+# All four variants
+podman run --rm -v "$PWD":/workspace ufo-builder make all
+```
+
+---
+
 ## Creating a new UFO
 
 ### 1. Get the repo

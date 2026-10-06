@@ -16,7 +16,7 @@ missing or out of date, guide the user to install it using the instructions belo
 |---|---|---|---|
 | **pandoc** | 3.0 | `pandoc --version` | `brew install pandoc` |
 | **XeLaTeX** | any recent TeXLive | `xelatex --version` | `brew install --cask mactex-no-gui` |
-| **Trebuchet MS** + **Arial** | — | `fc-list \| grep -i trebuchet` | macOS: built-in · Linux: `apt install ttf-mscorefonts-installer` |
+| **IBM Plex Sans** + **IBM Plex Mono** | — | `fc-list \| grep -i "ibm plex"` | Installed by the Docker/Podman image — no host install needed |
 | **Python 3** | 3.8 | `python3 --version` | `brew install python` |
 | **Node.js** | 18 | `node --version` | `brew install node` |
 | **@mermaid-js/mermaid-cli** (`mmdc`) | 12.0.0 | `mmdc --version` | `npm install -g --allow-scripts=puppeteer @mermaid-js/mermaid-cli` |
@@ -197,6 +197,85 @@ PDFs always land in the repo-level `output/` directory (gitignored). Never commi
 
 ---
 
+## Building with Docker / Podman
+
+The repo ships a [`Dockerfile`](Dockerfile) that packages the complete toolchain
+(TeX Live, Pandoc, mmdc, IBM Plex fonts). Use it instead of a local install to
+get a reproducible, licence-clean build environment.
+
+### Build the image
+
+```bash
+# Docker
+docker build -t ufo-builder .
+
+# Podman
+podman build -t ufo-builder .
+```
+
+The image is built once and cached. Rebuild only when `Dockerfile` changes.
+
+### Run a build
+
+```bash
+# From inside any UFO directory:
+docker run --rm -v "$PWD":/workspace ufo-builder make slides
+podman run --rm -v "$PWD":/workspace ufo-builder make slides
+
+# All four variants (slides, notes, handout, speakernotes):
+docker run --rm -v "$PWD":/workspace ufo-builder make all
+podman run --rm -v "$PWD":/workspace ufo-builder make all
+```
+
+The `-v "$PWD":/workspace` flag mounts the current UFO directory into the
+container at `/workspace`.  The shared theme is resolved via `git rev-parse
+--show-toplevel` inside the container, so the **entire repo root** must be
+reachable — not just the UFO subdirectory.
+
+### Podman on macOS — volume mount restriction
+
+Podman on macOS runs containers inside a Linux VM (Apple Hypervisor). The VM
+only exposes paths that are pre-registered as virtiofs shares. By default these
+are `/Users`, `/private`, and `/var/folders`. Paths on external volumes (e.g.
+`/Volumes/git/...`) are **not** reachable directly.
+
+**Workaround — stage into `$TMPDIR`:**
+
+```bash
+# $TMPDIR lives under /private/var/folders/ which IS visible in the VM
+STAGE=$(mktemp -d /private/var/folders/.../ufo-build-XXXX)  # use your actual TMPDIR
+rsync -a --exclude='output/' --exclude='build/' /path/to/repo/ "$STAGE/"
+podman run --rm -v "$STAGE":/workspace -w /workspace/<ufo-dir> ufo-builder make slides
+cp "$STAGE/output/"*.pdf /path/to/repo/output/
+```
+
+To check your `$TMPDIR`:
+
+```bash
+echo $TMPDIR   # e.g. /var/folders/h2/abc.../T/ — symlink to /private/var/folders/...
+```
+
+**Long-term fix:** `podman machine set --volume` is not yet supported (Podman 6.x).
+The fix is to manually add `/Volumes` to the machine's virtiofs mounts by editing
+`~/.config/containers/podman/machine/applehv/podman-machine-default.json` while the
+machine is stopped, then restarting. Only do this if you understand the risk of
+editing internal Podman state.
+
+### Puppeteer / Chromium inside the container
+
+The image sets `PUPPETEER_CACHE_DIR=/usr/local/share/puppeteer` so the bundled
+`chrome-headless-shell` binary is accessible to the non-root `builder` user at
+runtime. If you see `[Mermaid render failed]` in a PDF built from the image, the
+most likely cause is a stale cached image layer where the old `/root/.cache/`
+path was used — rebuild the image from scratch:
+
+```bash
+docker build --no-cache -t ufo-builder .
+podman build --no-cache -t ufo-builder .
+```
+
+---
+
 ## Marking up changes (revised UFOs)
 
 Use these markup patterns to highlight what changed for reviewers.
@@ -332,6 +411,44 @@ Notes visible only in notes/speakernotes PDFs.
 Guidance for the presenter — rendered in an amber box in the speakernotes PDF only.
 :::
 ```
+
+### Content restrictions
+
+#### Fonts
+
+The theme uses **IBM Plex Sans** (body, titles) and **IBM Plex Mono** (code
+blocks).  These are IBM's official corporate typeface (SIL OFL — redistributable)
+and are baked into the Docker/Podman image.
+
+- Do **not** reference any other font families in slide content or raw LaTeX.
+- Do **not** use Microsoft fonts (Arial, Trebuchet MS) — they are not installed
+  and their licence prohibits redistribution in container images.
+
+#### Emoji
+
+Emoji characters (`👤`, `⭐`, etc.) are **not reliably renderable** inside the
+container build environment — the headless Chromium used by mmdc has no system
+emoji font, so emoji in Mermaid diagrams render as blank boxes.
+
+- Do **not** use emoji in Mermaid diagram node labels.
+- The `⭐` character in slide text is remapped to `\star` via `\newunicodechar`
+  in `beamertheme.tex` — that single glyph is safe; others are not.
+
+#### Icons and pictograms
+
+IBM Carbon UI Icons and IBM Carbon Pictograms (Apache 2.0) are the correct
+choice for iconography — not emoji.  However, embedding SVG icons in Mermaid
+diagrams requires non-trivial tooling.
+
+**Preferred alternatives in Mermaid diagrams:**
+
+- Use the built-in `person` shape for actor nodes in use-case diagrams:
+  ```
+  actor@{ shape: person, label: "Developer" }
+  ```
+- Use text-only labels for all other actor/role nodes.
+- Reserve IBM Carbon icons for TikZ diagrams or static `\includegraphics` slides
+  where SVG→PDF conversion can be done as a pre-processing step.
 
 ---
 

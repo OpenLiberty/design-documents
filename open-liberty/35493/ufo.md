@@ -48,7 +48,7 @@ The MCP specification is versioned by date. Liberty currently implements protoco
 
 Key concepts:
 
-- **Protocol version**: Identified by an ISO date string (e.g. `2026-07-28`) and negotiated between client and server, allowing servers to support multiple versions and retain backwards compatibility.
+- **Protocol version**: A string (usually a date e.g. `2026-07-28`) negotiated between client and server, allowing both to support multiple versions and retain backwards compatibility.
 - **Tools**: Callable functions a server exposes. A tool has a name, description, and input/output JSON Schema. Clients call `tools/list` to discover tools and `tools/call` to invoke them.
 
 ---

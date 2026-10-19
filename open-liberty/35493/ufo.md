@@ -70,6 +70,7 @@ The `2026-07-28` specification makes several **breaking changes** to the core pr
 - The `ping` method is **removed**.
 - `tools/list` results now **must** include `ttlMs` and `cacheScope` fields.
 - Results must carry a `resultType` field (`"complete"` or `"input_required"`).
+- Some protocol error responses have changed
 
 ---
 
@@ -257,6 +258,22 @@ The `tools/list` response must now include `ttlMs` and `cacheScope` fields when 
 #### Changes to tool call responses
 
 All tool call results must now include a `resultType` field. For standard synchronous tool calls this is always `"complete"`. This field is added automatically by the Liberty MCP runtime.
+
+---
+
+#### Changes to error responses
+
+Some error responses have changed their HTTP response code or body content:
+
+| Error | `2025-11-25` | `2026-07-28` |
+| ----- | -----------  | ------------ |
+| Unsupported protocol | [HTTP `400`][old-bad-protocol] | [HTTP `400`][new-bad-protocol-http] + [JSON-RPC `-23022` with specified body][new-bad-protocol-schema] |
+| Unknown JSON-RPC method | JSON-RPC `-32601` | [HTTP `404` + JSON-RPC `-32601`][new-unknown-method]
+
+[old-bad-protocol]: https://modelcontextprotocol.org/specification/2025-11-25/basic/transports#protocol-version-header
+[new-bad-protocol-http]: https://modelcontextprotocol.org/specification/2026-07-28/basic/transports/streamable-http#protocol-version-header
+[new-bad-protocol-schema]: https://modelcontextprotocol.org/specification/2026-07-28/basic/versioning#protocol-version-negotiation
+[new-unknown-method]: https://modelcontextprotocol.org/specification/2026-07-28/basic/transports/streamable-http#protocol-version-header
 
 ---
 

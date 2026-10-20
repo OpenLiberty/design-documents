@@ -150,7 +150,12 @@ All MCP requests are HTTP POSTs with a JSON body. The tool name and arguments ar
 
 #### To-Be
 
-`2026-07-28` requires clients to send `Mcp-Method` and `Mcp-Name` HTTP headers on every POST, and tool parameters annotated with `@McpParamHeader` are promoted to HTTP headers. A system administrator can configure their load balancer to route on these standard headers — for example, sending calls to a `heavyProcessingTool` to a dedicated high-memory cluster — without any application changes.
+`2026-07-28` requires clients to send additional HTTP headers:
+- `Mcp-Method` on every POST
+- `Mcp-Name` HTTP headers on every tool call
+- tool parameters annotated with `@McpParamHeader` are promoted to HTTP headers
+
+A system administrator can configure their load balancer to route on these standard headers — for example, sending calls to a `heavyProcessingTool` to a dedicated high-memory cluster — without any application changes.
 
 For load balancer routing based on headers to be reliable, the administrator must ensure that only `2026-07-28` clients can connect  (as older clients do not send these headers). Liberty supports this via configuration to restrict the accepted protocol versions. Additionally, Liberty validates that the `Mcp-Method`, `Mcp-Name` and any `Mcp-Param-*` headers are present and consistent with the request body, rejecting requests where they are missing or mismatched.
 
@@ -255,9 +260,11 @@ The `tools/list` response must now include `ttlMs` and `cacheScope` fields when 
 
 ---
 
-#### Changes to tool call responses
+#### Changes to all responses
 
-All tool call results must now include a `resultType` field. For standard synchronous tool calls this is always `"complete"`. This field is added automatically by the Liberty MCP runtime.
+All results must now include a `resultType` field. For every call we process, this is always `"complete"`. This field is added automatically by the Liberty MCP runtime.
+
+The spec allows tool calls to return a `resultType` of `input_required` to send an elicitation request to the client, but this is not currently supported in `mcp-1.0` and is not in scope for this feature.
 
 ---
 
@@ -267,7 +274,7 @@ Some error responses have changed their HTTP response code or body content:
 
 | Error | `2025-11-25` | `2026-07-28` |
 | ----- | -----------  | ------------ |
-| Unsupported protocol | [HTTP `400`][old-bad-protocol] | [HTTP `400`][new-bad-protocol-http] + [JSON-RPC `-23022` with specified body][new-bad-protocol-schema] |
+| Unsupported protocol | [HTTP `400`][old-bad-protocol] | [HTTP `400`][new-bad-protocol-http] + [JSON-RPC `-32022` with specified body][new-bad-protocol-schema] |
 | Unknown JSON-RPC method | JSON-RPC `-32601` | [HTTP `404` + JSON-RPC `-32601`][new-unknown-method]
 
 [old-bad-protocol]: https://modelcontextprotocol.org/specification/2025-11-25/basic/transports#protocol-version-header

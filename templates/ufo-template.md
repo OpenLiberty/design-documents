@@ -114,20 +114,18 @@ CREATING SLIDES/PRESENTATION
 
 ### Communication
 
-> **NOTE:** How will the existence of this feature be communicated to users? Every feature will need some form of enablement and this section is where those considerations should be listed.  
+> **NOTE:** How will the existence of this feature be communicated to users? Every feature will need some form of enablement and this section is where those considerations should be listed.
+>
 > At a minimum the feature should expect to be described in the applicable beta release blog post, and the GA blog post. However depending on the feature one or more of the following should be considered:
->
-> - Additional Blog post specific to the feature/functionality (https://openliberty.io/blogs)
-> - Sample code demonstrating capability (for example, added to the feature example section on https://openliberty.io/docs Reference/Feature section, like seen in https://openliberty.io/docs/latest/reference/feature/appSecurity.html#_examples)
-> - YouTube video demonstrating capability
+> - Additional Blog post specific to the feature/functionality (openliberty.io/blogs); e.g. providing an introductory tutorial
+> - Sample code demonstrating capability (for example, added to the feature example section on openliberty.io/docs Reference/Feature section, like seen in https://openliberty.io/docs/latest/reference/feature/appSecurity.html#_examples)​
+> - Open Liberty guides (openliberty.io/guides). Engaging developers and the community is important and key to our Open Liberty’s strategy. Open Liberty guides are designed to take developers through a particular topic or technology in 15 or 20 mins providing meaningful learning experience to engage them. If the feature applies to Open Liberty and is relevant to developers, consider if guides should be created to engage developers and the community. Contact YK Chang if you need help determining if a guide is appropriate.
 > - Sample scripts to drive capability
-> - Getting started guide to use feature (doc and/or video)
 > - Communication on social media
-> - Open Liberty guides (https://openliberty.io/guides). Engaging developers and the community is important and key to our Open Liberty's strategy. Open Liberty guides are designed to take developers through a particular topic or technology in 15 or 20 mins providing meaningful learning experience to engage them. If the feature applies to Open Liberty and is relevant to developers, consider if guides should be created to engage developers and the community. Contact YK Chang if you need help determining if a guide is appropriate.
 >
-> These might be delivered via WASdev.net, the middleware blog, the WASdev github org, openliberty.io, the OpenLiberty github org or elsewhere.  
-> When looking at this section you MUST identify the target audience for what is being provided and should be related into the dev/ops lifecycle.  
-> Make sure you contact the publication venue early to ensure that it is an appropriate place to put the content; you don't want to ask someone to publish something that is done only to discover they say no.
+> These might be delivered via the WASdev GitHub org, openliberty.io, the OpenLiberty GitHub org, or elsewhere. Contact Laura Cowen if you need help deciding on a location.
+> When looking at this section you MUST identify the target audience for what is being provided and should be related into the dev/ops lifecycle.
+> Make sure you contact the publication venue early to ensure that it is an appropriate place to put the content; you don’t want to ask someone to publish something that is done only to discover they say no.
 
 ---
 

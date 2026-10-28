@@ -116,7 +116,7 @@ the `com.ibm.ws.wsat.common` metatype and defaulted by the public feature.
 - The `WSATFeatureBusListener` still registers the policy builder and provider, and the GZIP options, as before.
 - Interceptor phases and `before` / `after` ordering anchors.
 - The "WS-AT Feature is not installed" fault text and every condition that raises it.
-- The `propagation` attribute, its default, and the `CWLIB0212I` handling of dynamic configuration changes.
+- The `propagation` attribute, its default, and dynamic configuration update handling (where `propagation` and `asyncResponseTimeout` update dynamically while transport changes emit `CWLIB0212I` and require restart).
 - No new public API or SPI. Neither `com.ibm.ws.jaxws.wsat` package appears in any `IBM-API-Package` or
   `IBM-SPI-Package` header; both are listed only as bundles in the jaxws and xmlWS feature files.
 

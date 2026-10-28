@@ -19,6 +19,7 @@ This section establishes the user-centric motivation, target personas, migration
   - Outbound WS-AT behavior is governed by [[the presence of `wsAtomicTransaction-1.2`]{.deleted} [`wsAtomicTransaction-1.2`]{.added}]{.changed} and configured via `<wsAtomicTransaction/>`
   - Unconditional propagation is the legacy default provided by `defaultInstances.xml`
   - Compatible with [**JAX-WS 2.2** (`javax.xml.ws.*`)]{.added} [and **Jakarta XML Web Services 3.0+** (`jakarta.xml.ws.*`)]{.added}
+  - [**Rebundled Architecture** splits WS-AT into an internal runtime feature (`com.ibm.ws.wsat.internal`) for internal consumers (e.g. T-Rex) and a public feature (`wsAtomicTransaction-1.2`) for user-facing outbound propagation]{.added}
 :::
 
 ::: notes
@@ -54,6 +55,7 @@ XML namespace prefixes used in the WSDL snippet:
 - **Enterprise Application Developers** migrating JAX-WS applications from Traditional WebSphere (tWAS) to Open Liberty
 - **Integration Architects** designing composite enterprise workflows where transactional operations coexist with non-transactional external APIs (e.g., payment gateways, audit logging, notification services)
 - **DevOps & Platform Teams** seeking zero-code-change migration fidelity and seamless runtime parity with tWAS policy set semantics
+- [**Internal Liberty Frameworks & Subsystems (e.g. T-Rex)** requiring inbound WS-AT participant/coordination infrastructure without exposing public outbound propagation to users]{.added}
 
 ::: notes
 Target users are primarily enterprise modernization teams moving multi-tier SOAP applications to Liberty without needing to re-architect or refactor existing transactional orchestration code.
@@ -63,19 +65,17 @@ Target users are primarily enterprise modernization teams moving multi-tier SOAP
 
 - **Zero-Migration** — `<wsAtomicTransaction propagation="always"/>`:
   - *As an existing Liberty user*, I want my current applications to behave identically without changes when upgrading Liberty, so that my existing deployment remains completely unbroken.
-- **Opt-In** — `<wsAtomicTransaction propagation="conditional"/>`:
+- **Opt-In** — `<wsAtomicTransaction propagation="check_wsdl"/>`:
   - *As an enterprise developer*, I want WS-AT context attached only to endpoints that advertise `<wsat:ATAssertion>`, so that non-transactional services are called cleanly without manual transaction suspension.
-- **Outbound Suppression** — `<wsAtomicTransaction propagation="never"/>`:
-  - *As an administrator*, I want to suppress all outbound WS-AT propagation so my server can participate in inbound transactions without forwarding context to downstream services.
+
+[**Outbound Suppression** — `<wsAtomicTransaction propagation="never"/>`…]{.deleted}
 
 ::: notes
-Three user stories, each tied to an explicit `<wsAtomicTransaction/>` configuration:
+Two user stories, each tied to an explicit `<wsAtomicTransaction/>` configuration:
 
 1. **Zero-Migration Compatibility** (`<wsAtomicTransaction/>`): No `propagation` attribute means the default of `always` applies. Existing deployments continue unconditional WS-AT propagation on all outbound calls — zero config changes required on upgrade.
 
-2. **Opt-In Conditional Propagation** (`<wsAtomicTransaction propagation="conditional"/>`): Liberty inspects the target endpoint's WSDL for a `<wsat:ATAssertion>` policy. If present, WS-AT context is attached; if absent, the call proceeds as plain SOAP. Eliminates the need for manual `TransactionManager.suspend()` / `resume()` guards around non-transactional service calls.
-
-3. **Outbound Suppression** (`<wsAtomicTransaction propagation="never"/>`): The server can still receive and coordinate inbound WS-AT transactions but will never inject coordination context on outbound calls. Useful for inbound-only participant servers or when all downstream targets are non-transactional.
+2. **Opt-In Conditional Propagation** (`<wsAtomicTransaction propagation="check_wsdl"/>`): Liberty inspects the target endpoint's WSDL for a `<wsat:ATAssertion>` policy. If present, WS-AT context is attached; if absent, the call proceeds as plain SOAP. Eliminates the need for manual `TransactionManager.suspend()` / `resume()` guards around non-transactional service calls.
 :::
 
 ::: instruction
@@ -95,22 +95,22 @@ Cover each story in turn; invite the room to challenge whether the default of "a
 Today, developers must manually wrap third-party or non-transactional web service calls in transaction suspend/resume blocks to stop propagation, increasing code complexity and introducing transaction leak risks.
 :::
 
-# To-Be: Configurable Propagation
+# To-Be: Configurable Propagation & Rebundled WS-AT
 
-- **`wsAtomicTransaction-1.2` Not Enabled**: plain SOAP, no WS-AT headers
+- **`wsAtomicTransaction-1.2` Not Enabled** [*(or only `com.ibm.ws.wsat.internal` active via T-Rex)*]{.added}:
+  - [Plain SOAP transmitted; no outbound WS-AT headers injected]{.added}
+  - [If target WSDL strictly requires WS-AT (`<wsat:ATAssertion wsp:Optional="false"/>`), `WSATException` is thrown]{.added}
 - **Default Mode (`propagation="always"` or unconfigured)**:
   - Unconditional propagation remains default via `defaultInstances.xml` (Zero-Migration)
-- **Conditional Mode (`propagation="conditional"` / Opt-In)**:
+- **Conditional Mode (`propagation="check_wsdl"` / Opt-In)**:
   - WS-AT context attached **only** if target WSDL declares `<wsat:ATAssertion/>` (required) or `<wsat:ATAssertion wsp:Optional="true"/>` (optional); otherwise plain SOAP
-- **Suppression Mode (`propagation="never"` / Opt-In)**:
-  - Outbound WS-AT context is never attached on outbound client calls
-  - [If target declares `<wsat:ATAssertion/>` (required), call throws (same as feature disabled)]{.added}
+- [**Modular Feature Packaging**]{.added}:
+  - [`com.ibm.ws.wsat.internal` provides base participant/coordination runtime & plumbing config]{.added}
+  - [`wsAtomicTransaction-1.2` adds outbound interceptors and the `propagation` attribute]{.added}
 - **Zero code changes required** for migrated applications
 
 ::: notes
-With propagation="conditional", Liberty inspects the endpoint policy engine. If no WS-AT assertion is declared, WS-AT headers are omitted, allowing harmonious mixed-endpoint topologies within a single transaction.
-
-With propagation="never", outbound WS-AT context is never attached. If the target endpoint's WSDL declares ATAssertion as required (wsat:ATAssertion wsp:Optional="false"), the call will fail with an exception — this mirrors the behaviour when wsAtomicTransaction-1.2 is not enabled at all.
+With propagation="check_wsdl", Liberty inspects the endpoint policy engine. If no WS-AT assertion is declared, WS-AT headers are omitted, allowing harmonious mixed-endpoint topologies within a single transaction.
 :::
 
 # Feature Design: Runtime Interception
@@ -118,17 +118,15 @@ With propagation="never", outbound WS-AT context is never attached. If the targe
 ::: changed
 ## Active transaction
 
-| WS-AT Config       | Target WSDL `ATAssertion`? | Outcome                       |
-| :------------------:| :--------------------------:| :------------------------------|
-| WS-AT not enabled  | no                         | transmit SOAP request         |
-| WS-AT not enabled  | yes (optional)             | transmit SOAP request         |
-| WS-AT not enabled  | yes (required)             | throw `WSATException`         |
-| `never`            | no                         | transmit SOAP request         |
-| `never`            | yes (optional)             | transmit SOAP request         |
-| `never`            | yes (required)             | throw `WSATException`         |
-| `conditional`      | no                         | transmit SOAP request         |
-| `conditional`      | yes (optional or required) | transmit SOAP + WS-AT context |
-| `always` (default) | —                          | transmit SOAP + WS-AT context |
+| WS-AT Config       | Target WSDL `ATAssertion`?              | Outcome                       |
+| :------------------:| :---------------------------------------:| :------------------------------|
+| WS-AT not enabled  | no                                      | transmit SOAP request         |
+| WS-AT not enabled  | yes (optional)                          | transmit SOAP request         |
+| WS-AT not enabled  | yes (required)                          | throw `WSATException`         |
+| `check_wsdl`      | indeterminate (no WSDL / no policy tree) | transmit SOAP request         |
+| `check_wsdl`      | no                                      | transmit SOAP request         |
+| `check_wsdl`      | yes (optional or required)              | transmit SOAP + WS-AT context |
+| `always` (default) | —                                       | transmit SOAP + WS-AT context |
 
 ## No active transaction
 
@@ -140,9 +138,27 @@ With propagation="never", outbound WS-AT context is never attached. If the targe
 :::
 
 ::: notes
-Active transaction: if wsAtomicTransaction-1.2 is not enabled, or the target WSDL has no ATAssertion, the request proceeds as plain SOAP. When propagation="never", WS-AT context is never attached — but if the target declares ATAssertion as required, the call still throws (same behaviour as feature not enabled). Headers are only attached when the feature is active, propagation is "always" or "conditional", and (for conditional) the target WSDL declares ATAssertion.
+Active transaction: if wsAtomicTransaction-1.2 is not enabled, or the target WSDL has no ATAssertion, the request proceeds as plain SOAP. Headers are only attached when the feature is active, propagation is "always" or "check_wsdl", and (for check_wsdl) the target WSDL declares ATAssertion.
+
+Indeterminate policy (F-09): in check_wsdl mode, when the CXF Endpoint is absent from the exchange, the client is a dynamic Dispatch without WSDL, or the EffectivePolicy tree cannot be resolved, the outcome is treated identically to "no assertion" — propagation is suppressed. This is deliberate: outbound WS-AT headers carry mustUnderstand="true" and would cause a SOAP MustUnderstand fault on any non-WS-AT endpoint.
 
 No active transaction: ATAssertion optional or absent — plain SOAP. ATAssertion required — exception, because there is no transaction to propagate.
+:::
+
+# Architectural Rationale: `check_wsdl` Fail-Safe Contract
+
+- **`mustUnderstand="1"` on outbound WS-AT headers**:
+  - Outbound WS-AT context headers carry `soapenv:mustUnderstand="1"`; any endpoint that does not implement WS-AT **must** reject the call with a SOAP MustUnderstand fault
+- **Propagation is strictly opt-in in `check_wsdl` mode**:
+  - Context is attached only when there is **positive evidence** — a `<wsat:ATAssertion>` in the target WSDL — that the endpoint supports WS-AT
+- **Indeterminate policy → suppression**:
+  - When policy metadata cannot be determined (no WSDL available, dynamic `JAXWSDispatch` client without WSDL, missing `Endpoint` on the CXF exchange, or no `EffectivePolicy` resolvable), the runtime treats the result as "no assertion" and **suppresses** propagation
+  - This prevents inadvertent SOAP MustUnderstand faults against non-WS-AT endpoints
+- **`propagation="always"` as the unconditional escape hatch**:
+  - Users who need to propagate unconditionally regardless of WSDL availability configure `propagation="always"` (the default)
+
+::: notes
+The mustUnderstand="1" attribute on WS-AT SOAP headers is the root cause of MustUnderstand faults on non-WS-AT endpoints — the SOAP spec requires recipients to fault on headers they do not understand when this flag is set. check_wsdl therefore uses a positive-evidence model: absent confirmed WSDL support, the safe default is suppression. Dynamic Dispatch clients, missing WSDL endpoints, and unresolvable CXF EffectivePolicy are all treated identically to "no assertion". Users who know their topology is fully transactional and do not want the WSDL lookup overhead can remain on the always default.
 :::
 
 # End User Overview
@@ -184,7 +200,7 @@ No active transaction: ATAssertion optional or absent — plain SOAP. ATAssertio
   (cfg)
   {<wsAtomicTransaction\\[3pt]
    \ \ propagation=\\[3pt]
-   \ \ "conditional"/>};
+   \ \ "check\_wsdl"/>};
 
 % Arrows sit at fixed y; tail flush with srv.east (no xshift gap).
 % Upper row y=1.6, lower row y=-1.6 — symmetric about centre.
@@ -248,7 +264,7 @@ No active transaction: ATAssertion optional or absent — plain SOAP. ATAssertio
 ```
 
 ::: notes
-One config attribute — `propagation="conditional"` in `server.xml` — drives two outcomes automatically. When the target service declares `<wsat:ATAssertion>` in its WSDL, Liberty attaches the WS-AT coordination context and enlists it in the 2PC transaction (blue path). When the target has no WS-AT policy, the call proceeds as plain SOAP with no transaction headers (amber path). Zero application code changes required.
+One config attribute — `propagation="check_wsdl"` in `server.xml` — drives two outcomes automatically. When the target service declares `<wsat:ATAssertion>` in its WSDL, Liberty attaches the WS-AT coordination context and enlists it in the 2PC transaction (blue path). When the target has no WS-AT policy, the call proceeds as plain SOAP with no transaction headers (amber path). Zero application code changes required.
 :::
 
 ::: instruction

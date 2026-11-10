@@ -26,37 +26,54 @@ No net new open source dependencies are introduced. The implementation integrate
 
 # Beta & Feature Delivery
 
-- **Beta Shielding Strategy**:
-  - Configuration attribute `propagation` added to existing `<wsAtomicTransaction>` element
-  - Attribute marked `ibm:beta="true"` in `metatype.xml` during beta cycle if required prior to GA promotion
-  - [Internal feature `com.ibm.ws.wsat.internal` provides stable internal runtime for T-Rex beta cycles]{.added}
+::: changed
+- **Beta Shielding Strategy** (two independent mechanisms):
+  - **Schema visibility**: `propagation` is marked `ibm:beta="true"` in the `com.ibm.ws.wsat.common` `metatype.xml`. This only hides the attribute from the generated `server.xml` schema in non-beta builds; the runtime does not enforce it
+  - **Runtime guard**: `WSATConfigServiceImpl` reads `propagation` only when `ProductInfo.getBetaEdition()` is true. In a non-beta edition the value is ignored and Liberty behaves as `always`
+  - At GA, remove **both** the `ibm:beta` marker and the `getBetaEdition()` check
 - **Continuous Integration**:
   - Automated FAT verification enabled on daily build pipelines
+:::
 
 ::: notes
-Delivered within the wsAtomicTransaction-1.2 feature envelope and the internal com.ibm.ws.wsat.internal feature. Gated safely across beta and internal milestone builds before GA enablement.
+Delivered within the wsAtomicTransaction-1.2 feature envelope. The metatype marker and the runtime check are separate: removing only the marker would expose the attribute in the schema while the runtime still ignored it outside a beta edition, and removing only the runtime check would leave the attribute hidden from the schema. Both must be removed together at GA promotion.
 :::
 
 # Automated Testing
 
 - **Dedicated FAT Bucket**:
   - Validated using `com.ibm.ws.wsat_fat.assertion` and related `wsat_fat.*` buckets
+
+::: changed
 - **Key Test Scenarios**:
   - **Default Configuration (`propagation="always"`)**: Verifies legacy unconditional WS-AT context propagation behavior is preserved across both commit and rollback completions
   - **Conditional Mode (`propagation="check_wsdl"`)**:
     - Invoking endpoint with `<wsat:ATAssertion>` attaches WS-AT header and enlists in 2PC (verified via commit persistence and rollback removal)
     - Invoking endpoint without WS-AT assertions in an active transaction suppresses WS-AT header (verified by endpoint changes persisting even after client rollback)
-  - [**Internal Feature Only (`com.ibm.ws.wsat.internal` via test-only feature `usr:wsatInternalTest-1.0`)**]{.added}:
-    - [Verifies `propagation` attribute is rejected with configuration warning `CWWKG0032W` when only internal feature is present]{.added}
-    - [Verifies outbound WS-AT propagation is completely disabled / suppressed for non-transactional endpoints across commit and rollback]{.added}
-    - [Verifies endpoint with required `<wsat:ATAssertion wsp:Optional="false"/>` fails immediately with `WSATException`]{.added}
-    - [Verifies inbound coordination and participant 2PC completions succeed normally under commit and rollback]{.added}
-  - **Dynamic Updates**: Verifies changing `propagation` at runtime takes effect dynamically without requiring a server restart (N-01), while modifications to transport/security properties emit `CWLIB0212I` and defer until restart
-  - **Indeterminate Policy Suppression (F-09)**:
-    - Verifies that in `check_wsdl` mode, a call made via a dynamic `Dispatch` client (no WSDL), or to an endpoint whose CXF `Endpoint` / `EffectivePolicy` is absent, suppresses WS-AT context headers and proceeds as plain SOAP
+:::
+
+::: deleted
+- **Suppression Mode (`propagation="never"`)**
+:::
 
 ::: notes
-Test coverage verifies legacy default propagation, check_wsdl mode with positive/suppression paths, dynamic propagation switching without restart, dynamic configuration deferral for immutable attributes (CWLIB0212I emitted, active config unchanged, restart required), and indeterminate policy suppression paths for dynamic Dispatch and missing EffectivePolicy cases.
+Test coverage verifies legacy default propagation and check_wsdl mode with positive and suppression paths.
+:::
+
+# Automated Testing: Other Scenarios
+
+::: added
+- **Internal Feature Only (`usr:wsatInternalTest-1.0`)**:
+  - `propagation` accepted with no `CWWKG0032W` and silently ignored; outbound calls are plain SOAP and not enlisted (commit and rollback)
+  - Required assertion fails with `WS-AT Feature is not installed`; optional assertion sends plain SOAP
+  - Inbound request carrying a WS-AT context is rejected with the same fault
+- **Invalid value**: `CWWKG0032W` reported and server falls back to `always`
+- **Dynamic Updates**: `propagation` changes apply without restart in both directions and survive `server pause` / `server resume`
+- **Gap**: no dedicated FAT yet for indeterminate policy in `check_wsdl` mode (`Dispatch` without WSDL, missing `Endpoint`/`EffectivePolicy`); add before GA
+:::
+
+::: notes
+Covers the internal-only feature behaviour, invalid values and dynamic switching. The indeterminate-policy suppression paths are implemented in CoorContextOutInterceptor but have no dedicated test yet.
 :::
 
 # System Test Impact
@@ -72,21 +89,25 @@ Mixed-endpoint integration tests should be added to continuous system test runs 
 
 # Performance
 
-- **Negligible Overhead**:
-  - Simple enum/state check on `propagation` in interceptor path
-  - Policy evaluation uses the cached `AssertionInfoMap` within CXF client interceptor chains
-- **Zero Impact on Baseline Footprint**:
-  - 0% increase in server startup time, memory footprint, or disk install size
-  - Outbound SOAP throughput remains unchanged
+::: changed
+- **Minimal change to outbound request cost**:
+  - Policy is already looked up for each outbound request by CXF's policy interceptor and the existing WS-AT interceptor; this feature adds a read of the `propagation` setting and a comparison
+  - That lookup reads policy from the CXF client's in-memory service model, not from the network
+- **Minimal change to baseline footprint**:
+  - Minimal change to server startup time, memory footprint, and install size
+:::
 
 ::: notes
-Performance impact is negligible since CXF caches effective endpoint policies upon client proxy initialization. No runtime I/O is introduced.
+Where the policy comes from: CoorContextOutInterceptor calls WSCoorUtil.isOptional (when the AssertionInfoMap has no AT assertion), which calls the CXF PolicyEngine's getEffectiveClientRequestPolicy. CXF's own PolicyOutInterceptor makes the same call when it builds the AssertionInfoMap. CXF builds the effective policy from the policy attachments held in the client's service model (ServiceInfo, EndpointInfo and BindingOperationInfo extensors, via the ServiceModelPolicyProvider and Wsdl11AttachmentPolicyProvider), which were populated from the target WSDL when the client was created. The policy engine classes contain no network or file access. The computed effective policy is cached as a property on the BindingOperationInfo (and the endpoint policy on the EndpointInfo), so after the first call for an operation the lookup is a cache hit.
+
+The lookup existed before this feature (it detects a required assertion with no active transaction); check_wsdl only adds a decision on its result. No performance measurements have been taken, hence the qualitative wording.
 :::
 
 # Platform / Cloud Considerations
 
 - **Full Cross-Platform Support**:
   - Runs uniformly across all supported Open Liberty operating systems: Linux (x86_64, ppc64le, s390x), macOS, Windows, and z/OS
+  - [Fully verified across IBM Semeru Runtimes and Eclipse Temurin Java SE 11, 17, and 21 LTS releases]{.deleted}
   - [Compatible with the same Java SE runtimes supported by the underlying JAX-WS / Jakarta XML Web Services features (Java SE 8+, subject to the feature's platform matrix)]{.added}
 - **Cloud & Container Ready**:
   - Stateless outbound evaluation excels in Kubernetes, Red Hat OpenShift, and containerized microservice architectures
@@ -98,47 +119,35 @@ Operates identically across all supported OS platforms and Java LTS levels, with
 
 # Security
 
-- **Secure Context Propagation**:
-  - WS-AT coordination contexts contain transient transaction identifiers only; no sensitive user credentials or PII transmitted
-  - Fully compatible with WS-Security (`ws-security-1.1`), TLS encryption, and secure SOAP envelopes
-- **Context Leakage Prevention**:
-  - Setting `propagation="check_wsdl"` prevents unintended transaction coordination headers from being dispatched to untrusted external endpoints
+::: changed
+- **No change to what is transmitted**:
+  - This feature only controls *whether* the WS-AT context is sent on an outbound request, not its content or how it is protected
+  - Existing WS-Security and TLS configuration applies exactly as before
+- **Narrower propagation in `check_wsdl` mode**:
+  - The context is sent only to endpoints whose WSDL declares a WS-AT assertion
+  - The WSDL is supplied by the target, so this is a compatibility control, not an access control
+:::
 
 ::: notes
-Security is strengthened by preventing unintentional leaking of internal transaction coordination contexts to third-party or untrusted external endpoints.
+The default (always) sends the context to every endpoint called inside a global transaction, as before. check_wsdl reduces the set of recipients to those that advertise WS-AT. Because the target's own WSDL decides, an endpoint that advertises WS-AT will receive the context in check_wsdl mode; do not rely on this setting to keep the context from a service you do not trust.
 :::
 
 # Serviceability
 
+::: changed
 - **Clear Diagnostic Trace**:
-  - Comprehensive trace logging under `com.ibm.ws.wsat.*=all` records policy evaluation decisions (propagated vs. suppressed) and active configuration
-- **Actionable Error Messages**:
-  - Informative logging and FFDC capture if a remote endpoint rejects coordination or policy mismatch occurs
-- **First-Failure Data Capture (FFDC)**:
-  - Clean error capture for unexpected network or transport faults during 2PC coordination
-- **Dynamic Configuration Handling (N-01)**:
-  - Dynamic updates to `propagation` and `asyncResponseTimeout` take effect immediately on active instances without requiring a server restart
-  - When transport or security properties (`sslEnabled`, `sslRef`, `externalURLPrefix`, `clientAuth`, `virtualHostRef`) are updated at runtime, `WSATConfigServiceImpl#modified()` retains the existing active configuration unchanged and emits `CWLIB0212I` to inform the operator that those changes require a server restart
-  - DS component recycling — and the transient service dropouts it causes — is prevented by the `@Modified` callback absorbing the config change notification without deactivating/reactivating the component
+  - Trace under `com.ibm.ws.wsat.*=all` records policy decisions (propagated vs. suppressed) and active configuration
+- **Actionable Errors and FFDC**:
+  - Logging and FFDC capture if a remote endpoint rejects coordination or on transport faults during 2PC
+- **Dynamic Configuration**:
+  - Changes to `propagation` (and the other `<wsAtomicTransaction>` attributes) in `server.xml` are applied to the running server without a restart
+  - A `propagation` value on a server without the public `wsAtomicTransaction-1.2` feature is accepted without a warning and has no effect; the trace records the value and that it is unused
+:::
 
 ::: notes
 Serviceability provides clear trace entries indicating whether WS-AT was enabled or bypassed based on target endpoint WSDL policy.
-Dynamic configuration handling (N-01): WSATConfigServiceImpl.modified() is annotated @Modified to intercept DS config-change callbacks. Changes to propagation and asyncResponseTimeout take effect immediately. On runtime server.xml updates that change transport/security properties, it logs CWLIB0212I and preserves the active transport configuration until a server restart.
+WSATConfigServiceImpl reads all attributes, including propagation, in its @Modified method, so server.xml edits take effect without recycling the component.
 :::
-
-# InstantOn
-
-::: changed
-- **Potentially InstantOn Compatible**:
-  - WS-AT policy resolution structures are stateless per endpoint, but WS-AT is not currently supported in InstantOn; this feature would be compatible with InstantOn checkpoint/restore cycles if/when WS-AT support is added
-- **Dynamic Configuration Tolerance**:
-  - Dynamic updates to `propagation` take effect immediately on subsequent outbound requests without application restarts
-:::
-
-::: notes
-The feature establishes no static state that conflicts with InstantOn. However, WS-AT itself is not yet supported in InstantOn (on the backlog). The propagation attribute and policy resolution logic are designed to be compatible with InstantOn checkpoint/restore once WS-AT is ported.
-:::
-
 
 # Accessibility Compliance
 
@@ -153,18 +162,19 @@ This slide is marked N/A as Conditional WS-AT is strictly a backend runtime capa
 # Migration Impact
 
 ::: changed
-- **Zero-Migration Cost**: Default (`propagation="always"`) is 100% compatible with existing Liberty deployments — no `server.xml` or application changes required
-- **Zero-Friction from tWAS**: `propagation="check_wsdl"` restores tWAS-style per-endpoint isolation without code changes
-- **MoRE recommendation**: set `propagation="check_wsdl"` when migrating from tWAS — most closely mirrors tWAS's opt-in propagation model
-- **Configuration**:
-  ```xml
-  <featureManager><feature>wsAtomicTransaction-1.2</feature></featureManager>
-  <wsAtomicTransaction propagation="check_wsdl"/>
-  ```
+- **Existing Liberty users**: the default (`propagation="always"`) keeps today's behavior; no `server.xml` or application changes are required
+- **Migrating from tWAS**: `check_wsdl` gives a similar result for the common case (WS-AT context goes to services that declare WS-AT and not to others) without code changes, but it is **not equivalent** to tWAS policy sets:
+
+| | tWAS | Liberty `check_wsdl` |
+|:--|:--|:--|
+| Where configured | Policy sets and bindings, per service / endpoint | One server-wide attribute |
+| What decides | The configured policy set | The WS-AT assertion in the **target's** WSDL |
+| Override per endpoint | Yes | No |
+| No WSDL (e.g. `Dispatch`) | — | Plain SOAP |
 :::
 
 ::: notes
-Provides a major migration win by allowing legacy tWAS workloads using mixed transactional/non-transactional web services to run on Liberty without application code refactoring.
+In tWAS the consumer chooses, endpoint by endpoint, through configuration. In Liberty check_wsdl the provider chooses, by advertising a WS-AT assertion in its WSDL, and the consumer has a single switch. Consequences: (1) you cannot propagate to one service that lacks an assertion while skipping another; use always to reach every service, or add the assertion to the WSDL. (2) You cannot suppress propagation to a service that does advertise WS-AT. (3) A service that supports WS-AT but does not advertise it is treated as having no assertion and is not enlisted, so its work is not rolled back with the caller's transaction. (4) Clients with no WSDL cannot be evaluated and are sent as plain SOAP. Review each migrated application's service WSDLs against these points before choosing check_wsdl. Configuration: <wsAtomicTransaction propagation="check_wsdl"/> alongside the wsAtomicTransaction-1.2 feature.
 :::
 
 # End of UFO {.unnumbered}

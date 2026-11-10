@@ -12,12 +12,15 @@ This section details how the feature is surfaced to developers, administrators, 
 
 - **Open Liberty Release Blog Post**:
   - Announce the new `propagation` attribute on `<wsAtomicTransaction/>` enabling conditional WS-AT propagation
+
+::: changed
 - **Open Liberty Documentation**:
   - Update `wsAtomicTransaction-1.2` feature doc with configuration examples and WSDL policy discovery details
   - Update client behaviour table with the new `propagation` values and their effects
 - **Target Audience**:
   - Enterprise Java developers and architects migrating JAX-WS workloads from tWAS to Open Liberty
   - [Developers needing selective transaction propagation across]{.added} [mixed transactional/non-transactional endpoints]{.added}
+:::
 
 ::: notes
 Enablement will be delivered through standard Open Liberty release blogs and feature documentation on openliberty.io, specifically calling out the closure of the tWAS migration gap.
@@ -29,7 +32,6 @@ Enablement will be delivered through standard Open Liberty release blogs and fea
   - Behavior is fully integrated into existing [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} runtime and `wsAtomicTransaction-1.2` feature internals
 - **Standard [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} Programming Model Preserved**:
   - Developers continue using standard `@WebServiceRef`, `javax.xml.ws.Service` [/ `jakarta.xml.ws.Service`]{.added}, or generated [JAX-WS]{.deleted} [Java API / Jakarta XML Web Services]{.added} client proxies without proprietary extensions
-:::
 - **Standard WS-Policy Annotations**:
   - Supports standard `@Policy` / `@PolicySets` or direct WSDL `<wsp:Policy>` / `<wsat:ATAssertion>` attachments
 
@@ -51,36 +53,43 @@ This slide is N/A. State so briefly and move on — do not dwell.
 
 ::: changed
 - **Feature & Config Structure**:
-  - [**Internal Feature (`com.ibm.ws.wsat.internal`)**]{.added}:
-    - [Exposes base `<wsAtomicTransaction>` configuration with existing plumbing attributes (`sslEnabled`, `sslRef`, `clientAuth`, `externalURLPrefix`, `asyncResponseTimeout`, `virtualHostRef`)]{.added}
-    - [Does **not** expose the `propagation` attribute; outbound WS-AT is disabled]{.added}
-  - [**Public Feature (`wsAtomicTransaction-1.2`)**]{.added}:
-    - [Extends `com.ibm.ws.wsat.internal` and augments `<wsAtomicTransaction>` with `propagation="always|check_wsdl"` (Default: `always`)]{.added}
-    - [Wires in the outbound transaction context injection interceptors]{.added}
+  - **Private internal features**: provide the base `<wsAtomicTransaction>` plumbing attributes. `propagation` is **accepted without a warning but silently ignored**; outbound WS-AT stays disabled
+  - **Public feature (`wsAtomicTransaction-1.2`)**: supplies the `propagation="always|check_wsdl"` default (`always`); the only feature that enables outbound context injection
 - **Configuration Modes**:
   - **Zero-Migration Default**: `<wsAtomicTransaction/>` (`propagation="always"`)
   - **Opt-In Conditional Mode**: `<wsAtomicTransaction propagation="check_wsdl"/>`
-- **Lifecycle Support**: Compatible with `server pause` and `server resume`
+- **Dynamic**: applies without a restart; works with `server pause` / `resume`
+- [**Outbound Suppression Mode**: `<wsAtomicTransaction propagation="never"/>`]{.deleted}
 :::
 
 ::: notes
-The rebundled structure separates base plumbing config (in the internal feature) from outbound propagation controls (in the public feature). When public wsAtomicTransaction-1.2 is installed, propagation defaults to always in metatype.xml/defaultInstances.xml for zero-migration compatibility.
+The base plumbing config lives in the internal features. The public wsAtomicTransaction-1.2 feature supplies the propagation default (always) through its own default configuration rather than the metatype, so a propagation value on a server without the public feature has been set explicitly and has no effect.
 
-**Dynamic configuration (N-01):** `WSATConfigServiceImpl` implements `@Modified` so that runtime `server.xml` edits do **not** recycle the DS component. Dynamic updates to `propagation` and `asyncResponseTimeout` take effect immediately on active instances without requiring a server restart. For transport and security properties (`sslEnabled`, `sslRef`, `externalURLPrefix`, `clientAuth`, `virtualHostRef`), the active configuration is retained unchanged, informational message `CWLIB0212I` is emitted, and changes are deferred until server restart. This eliminates transient service dropouts caused by DS component teardown/re-registration during live updates.
+Why "silently ignored" rather than "rejected": the attribute is declared in the com.ibm.ws.wsat.common metatype, which both the internal and public features load. The config layer therefore treats it as a known attribute and does not log CWWKG0032W. The runtime then never adds the outbound interceptor unless the public feature is present. A warning for this case could be added later if operators find the silence confusing.
+
+Dynamic configuration: WSATConfigServiceImpl reads every attribute, including propagation, in its @Modified method. Edits to server.xml are applied to the running component without recycling it, so there is no restart requirement and no warning message.
 :::
 
 # Developer Experience
 
 - **Frictionless Local Development**:
   - Seamless operation within Open Liberty Dev Mode (`mvn liberty:dev` / `gradle libertyDev`)
+
+::: deleted
 - **First-Class Tooling Support**:
   - Works out of the box with Eclipse, IntelliJ IDEA, and VS Code using standard WSDL/JAX-WS tooling
+:::
+
+::: changed
 - **Automated Policy Resolution**:
   - When `propagation="check_wsdl"`, client proxies automatically evaluate target WSDL policies
-- **Behaviour on Indeterminate Policy** (`check_wsdl` mode):
-  - If the target endpoint WSDL is unavailable, the client is a dynamic `Dispatch` without WSDL, the CXF `Endpoint` is absent from the exchange, or no `EffectivePolicy` can be resolved — the transaction is **not propagated** (silent pass-through)
-  - Root cause: outbound WS-AT headers carry `soapenv:mustUnderstand="1"`; sending them to an endpoint that does not implement WS-AT causes a SOAP MustUnderstand fault — suppression prevents this
-  - The alternative — failing fast with an error on indeterminate policy — is **not implemented**; it could be added as a configuration option if a future use case requires it
+:::
+
+::: added
+- **Indeterminate Policy** (`check_wsdl` mode):
+  - No WSDL, `Dispatch` without WSDL, missing `Endpoint`, or no `EffectivePolicy` → transaction **not propagated** (silent pass-through), avoiding a MustUnderstand fault
+  - Failing fast instead is **not implemented**; it could become a config option
+:::
 
 ::: notes
 Developers experience no friction during iterative development. JAX-WS clients resolve endpoint WSDL assertions locally and in dev mode identically to production deployments.
@@ -91,9 +100,12 @@ In check_wsdl mode, any indeterminate policy outcome (no WSDL, dynamic Dispatch,
 
 - **No Features Stabilized or Deprecated**:
   - `wsAtomicTransaction-1.2` remains fully supported and active
+
+::: changed
 - **Compatibility with Existing Applications**:
   - Applications relying on legacy unconditional propagation remain 100% unaffected by default
   - Modernized applications opting into `propagation="check_wsdl"` eliminate manual suspend/resume workarounds
+:::
 
 ::: notes
 This is an enhancement to the existing wsAtomicTransaction-1.2 feature that preserves backward compatibility while eliminating the failure mode on non-transactional endpoints.
@@ -115,13 +127,20 @@ Problem determination is facilitated through existing WS-AT and CXF policy trace
 
 # InstantOn
 
-- **Fully InstantOn Compatible**:
-  - WS-AT policy resolution structures are stateless per endpoint and support InstantOn checkpoint/restore cycles
-- **Dynamic Configuration Tolerance**:
-  - Dynamic updates to `propagation` take effect immediately on subsequent outbound requests without application restarts
+::: deleted
+- **Fully InstantOn Compatible**
+:::
+
+::: added
+- **WS-AT does not currently support InstantOn**:
+  - This feature does not change that
+- **No additional InstantOn considerations**:
+  - `propagation` is read from Liberty configuration and applied dynamically, so it needs no special handling when a checkpointed process is restored
+  - The feature holds no state of its own that would need to be unique per restored instance
+:::
 
 ::: notes
-The feature establishes no static state that conflicts with InstantOn. Interceptor chains and WS-Policy maps are safely rebuilt and evaluated during active request dispatch.
+WS-AT itself is not supported with InstantOn, so this feature cannot be used with it today. The point of this slide is that conditional propagation adds nothing new to the work needed to support InstantOn when WS-AT support is added: the setting is ordinary dynamic configuration, and the feature keeps no state of its own.
 :::
 
 # Versionless Features

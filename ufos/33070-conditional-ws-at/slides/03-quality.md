@@ -69,11 +69,11 @@ Test coverage verifies legacy default propagation and check_wsdl mode with posit
   - Inbound request carrying a WS-AT context is rejected with the same fault
 - **Invalid value**: `CWWKG0032W` reported and server falls back to `always`
 - **Dynamic Updates**: `propagation` changes apply without restart in both directions and survive `server pause` / `server resume`
-- **Gap**: no dedicated FAT yet for indeterminate policy in `check_wsdl` mode (`Dispatch` without WSDL, missing `Endpoint`/`EffectivePolicy`); add before GA
+- **Indeterminate policy (`check_wsdl` mode)**: `Dispatch` client without WSDL and missing `Endpoint`/`EffectivePolicy` suppress WS-AT header (to be automated before GA)
 :::
 
 ::: notes
-Covers the internal-only feature behaviour, invalid values and dynamic switching. The indeterminate-policy suppression paths are implemented in CoorContextOutInterceptor but have no dedicated test yet.
+Covers the internal-only feature behaviour, invalid values, dynamic switching, and indeterminate-policy suppression paths (`Dispatch` without WSDL, missing `Endpoint`/`EffectivePolicy`) in `check_wsdl` mode.
 :::
 
 # System Test Impact

@@ -16,7 +16,7 @@ missing or out of date, guide the user to install it using the instructions belo
 |---|---|---|---|
 | **pandoc** | 3.0 | `pandoc --version` | `brew install pandoc` |
 | **XeLaTeX** | any recent TeXLive | `xelatex --version` | `brew install --cask mactex-no-gui` |
-| **Trebuchet MS** + **Arial** | — | `fc-list \| grep -i trebuchet` | macOS: built-in · Linux: `apt install ttf-mscorefonts-installer` |
+| **IBM Plex Sans** + **IBM Plex Mono** | — | `fc-list \| grep -i "plex"` | macOS: `brew install --cask font-ibm-plex` · Linux: `apt install fonts-ibm-plex` |
 | **Python 3** | 3.8 | `python3 --version` | `brew install python` |
 | **Node.js** | 18 | `node --version` | `brew install node` |
 | **@mermaid-js/mermaid-cli** (`mmdc`) | 12.0.0 | `mmdc --version` | `npm install -g --allow-scripts=puppeteer @mermaid-js/mermaid-cli` |

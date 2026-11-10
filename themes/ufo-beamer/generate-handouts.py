@@ -192,9 +192,10 @@ def generate_notes_1up(main_title, epics_label, slides, slide_pdf, output_tex, c
 \usepackage{enumitem}
 \usepackage{xurl}
 
-\setmainfont{Arial}
-\setsansfont{Arial}
-\newfontfamily\titlefont{Trebuchet MS}
+\setmainfont{IBM Plex Sans}
+\setsansfont{IBM Plex Sans}
+\setmonofont{IBM Plex Mono}
+\newfontfamily\titlefont{IBM Plex Sans}
 
 \definecolor{ufonavydark}{RGB}{32,32,62}
 \definecolor{ufoteal}{RGB}{76,87,125}
@@ -295,9 +296,10 @@ def generate_handout_digital(main_title, epics_label, slides, slide_pdf, output_
 \usepackage{enumitem}
 \usepackage{xurl}
 
-\setmainfont{Arial}
-\setsansfont{Arial}
-\newfontfamily\titlefont{Trebuchet MS}
+\setmainfont{IBM Plex Sans}
+\setsansfont{IBM Plex Sans}
+\setmonofont{IBM Plex Mono}
+\newfontfamily\titlefont{IBM Plex Sans}
 
 \definecolor{ufonavydark}{RGB}{32,32,62}
 \definecolor{ufoteal}{RGB}{76,87,125}
@@ -387,9 +389,10 @@ def generate_speakernotes(main_title, epics_label, slides, slide_pdf, output_tex
 \usepackage{enumitem}
 \usepackage{xurl}
 
-\setmainfont{Arial}
-\setsansfont{Arial}
-\newfontfamily\titlefont{Trebuchet MS}
+\setmainfont{IBM Plex Sans}
+\setsansfont{IBM Plex Sans}
+\setmonofont{IBM Plex Mono}
+\newfontfamily\titlefont{IBM Plex Sans}
 
 \definecolor{ufonavydark}{RGB}{32,32,62}
 \definecolor{ufoteal}{RGB}{76,87,125}

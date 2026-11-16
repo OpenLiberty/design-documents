@@ -17,9 +17,9 @@ Install these once on your machine:
 
 | Tool | Version | How to get it |
 |---|---|---|
-| **pandoc** | ≥ 3.x | `brew install pandoc` · [pandoc.org](https://pandoc.org/installing.html) |
+| **pandoc** | ≥ 3.0 | `brew install pandoc` · [pandoc.org](https://pandoc.org/installing.html) |
 | **XeLaTeX** | any recent | `brew install --cask mactex-no-gui` (macOS) · `apt install texlive-xetex` (Linux) |
-| **Trebuchet MS** + **Arial** | — | Ships with macOS · Linux: `apt install ttf-mscorefonts-installer` |
+| **IBM Plex Sans** + **IBM Plex Mono** | — | macOS: `brew install --cask font-ibm-plex` · Linux: `apt install fonts-ibm-plex` |
 | **Python 3** | ≥ 3.8 | `brew install python` · ships with most systems |
 | **Node.js** | ≥ 18 | `brew install node` · [nodejs.org](https://nodejs.org/) |
 | **@mermaid-js/mermaid-cli** | ≥ 12 | `npm install -g --allow-scripts=puppeteer @mermaid-js/mermaid-cli` |
@@ -48,6 +48,19 @@ rendering. On Linux you may also need:
 sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 \
   libcups2 libxkbcommon0 libxcomposite1 libxdamage1 \
   libxfixes3 libxrandr2 libgbm1 libasound2
+```
+
+### Containerized build (Docker / Podman)
+
+Instead of installing TeXLive and dependencies locally, you can build using the included `Dockerfile`:
+
+```bash
+# Build the container image
+podman build -t ufo-builder .
+# or: docker build -t ufo-builder .
+
+# Build a specific UFO
+podman run --rm -v "$(pwd):/workspace:z" -w /workspace/ufos/33070-conditional-ws-at ufo-builder make all
 ```
 
 ---

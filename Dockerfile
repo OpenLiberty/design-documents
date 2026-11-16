@@ -54,6 +54,9 @@ RUN npm install -g --allow-scripts=puppeteer @mermaid-js/mermaid-cli \
 ENV PUPPETEER_CONFIG=/etc/puppeteer-config.json
 RUN echo '{"args": ["--no-sandbox", "--disable-setuid-sandbox"]}' > /etc/puppeteer-config.json
 
+# Signal to makefiles that builds inside the container are local
+ENV FORCE_LOCAL=true
+
 # Create non-root user and workspace directory
 RUN useradd -m -u 1001 -s /bin/bash appuser && \
     mkdir -p /workspace && \

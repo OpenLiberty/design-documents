@@ -55,6 +55,18 @@ sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 \
 If `mmdc` is not installed, the build will still succeed but any `mermaid` code
 blocks will be replaced with `[Mermaid render failed]` placeholder text in the PDF.
 
+### Building via Container (Docker / Podman)
+
+A [`Dockerfile`](Dockerfile) is provided to build UFOs without installing the TeXLive toolchain locally:
+
+```bash
+# 1. Build image once
+podman build -t ufo-builder .
+
+# 2. Build slides/handouts from any UFO directory
+podman run --rm -v "$(pwd):/workspace:z" -w /workspace/ufos/33070-conditional-ws-at ufo-builder make all
+```
+
 ---
 
 ## Repository layout

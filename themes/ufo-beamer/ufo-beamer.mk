@@ -1,4 +1,6 @@
 # ufo-beamer.mk — shared rules for all UFO Makefiles
+# Dispatches builds to container (podman / docker) on host by default,
+# or compiles directly when FORCE_LOCAL=true (e.g. inside container).
 #
 # Each UFO Makefile must set these variables BEFORE including this file:
 #
@@ -15,105 +17,113 @@
 #   IMAGES_DIR (default: images)
 #   OUTPUT_DIR (default: <git-root>/output) — final PDFs, gitignored at repo root
 
-BUILD_DIR  ?= build
-SLIDES_DIR ?= slides
-IMAGES_DIR ?= images
+GIT_ROOT  := $(shell git rev-parse --show-toplevel)
+THEME_DIR  = $(GIT_ROOT)/themes/ufo-beamer
 
-# Locate the theme and shared output dir via the git root — works wherever
-# the UFO folder is placed inside the repository.
-GIT_ROOT   := $(shell git rev-parse --show-toplevel)
-THEME_DIR   = $(GIT_ROOT)/themes/ufo-beamer
-OUTPUT_DIR ?= $(GIT_ROOT)/output
-
-TITLE_MD = $(SLIDES_DIR)/00-title.md
-
-THEME     = $(THEME_DIR)/beamertheme.tex
-THEME_ALL = $(wildcard $(THEME_DIR)/*)
-
-EPICS_SH       = $(THEME_DIR)/epics.sh
-CHECK_OVERFLOW = python3 $(THEME_DIR)/check-overflow.py
-
-# Extract fields from the title slide front matter
-TITLE_SLUG := $(shell grep '^title:'     $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//' \
-                | tr '[:upper:]' '[:lower:]' \
-                | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$$//')
-ARCHITECT  := $(shell grep '^architect:' $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
-EPICS      := $(shell grep '^epics:'     $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
-
-# Error if ufo-date is still present — date is now auto-generated from git.
-ifneq ($(shell grep '^ufo-date:' $(TITLE_MD)),)
-  $(error $(TITLE_MD) contains a 'ufo-date:' field. Remove it — the date is now auto-generated from git.)
+# Check for container engine if not forcing local build
+ifneq ($(FORCE_LOCAL),true)
+  CONTAINER_ENGINE ?= $(shell which podman 2>/dev/null || which docker 2>/dev/null)
 endif
 
-# Git-derived date, sha, and draft state.
-# If any source file has uncommitted changes: draft mode, today's date, ???????? sha.
-# Otherwise: date and sha from the last commit touching the sources.
-_GIT_DIRTY := $(shell git status --porcelain $(SOURCES) 2>/dev/null)
-ifneq ($(_GIT_DIRTY),)
-  GIT_DATE  := $(shell date '+%Y-%m-%d')
-  GIT_SHA   := ????????????
-  GIT_DRAFT := true
-else
-  GIT_DATE  := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d' -- $(SOURCES) 2>/dev/null)
-  GIT_SHA   := $(shell git log -1 --abbrev=12 --format=%h -- $(SOURCES) 2>/dev/null)
-  GIT_DRAFT := false
-endif
+ifeq ($(CONTAINER_ENGINE),)
+  # =========================================================================
+  # Direct compilation mode (inside container, FORCE_LOCAL=true, or no engine)
+  # =========================================================================
 
-# Validate epics, then derive slug and LaTeX links via epics.sh
-_EPIC_VALIDATE := $(shell $(EPICS_SH) validate "$(EPICS)" 2>&1 || true)
-ifneq ($(_EPIC_VALIDATE),)
-  $(error $(_EPIC_VALIDATE))
-endif
-EPICS_SLUG  := $(shell $(EPICS_SH) slug  "$(EPICS)")
-EPICS_LINKS := $(shell $(EPICS_SH) links "$(EPICS)")
+  BUILD_DIR  ?= build
+  SLIDES_DIR ?= slides
+  IMAGES_DIR ?= images
+  OUTPUT_DIR ?= $(GIT_ROOT)/output
 
-# PDF filename prefix — override to 'example-' (or anything else) in the
-# UFO Makefile before the include if this is not a real UFO.
-PDF_PREFIX ?= ufo-
+  TITLE_MD = $(SLIDES_DIR)/00-title.md
 
-# WITH_CHANGES — convenience flag for revised UFO builds.
-# Set WITH_CHANGES = true in the UFO Makefile to activate the change key on
-# the title slide, append -with-changes to the PDF filename, and enable the
-# Pandoc ufo-changes metadata that drives Mermaid/TikZ change annotations.
-# All three variables can still be overridden individually if needed.
-WITH_CHANGES ?= false
-ifeq ($(WITH_CHANGES),true)
-  EXTRA_VARS_TEX    ?= \ufochangestrue
-  PDF_VARIANT       ?= -with-changes
-  PANDOC_EXTRA_META ?= --metadata ufo-changes=true
-endif
+  THEME     = $(THEME_DIR)/beamertheme.tex
+  THEME_ALL = $(wildcard $(THEME_DIR)/*)
 
-# PDF variant tag — set to '-with-changes' in the UFO Makefile alongside
-# EXTRA_VARS_TEX = \ufochangestrue to distinguish revision builds from originals.
-PDF_VARIANT ?=
+  EPICS_SH       = $(THEME_DIR)/epics.sh
+  CHECK_OVERFLOW = python3 $(THEME_DIR)/check-overflow.py
 
-PDF_STEM         = $(PDF_PREFIX)$(EPICS_SLUG)-$(TITLE_SLUG)
-PDF_SLIDES       = $(OUTPUT_DIR)/$(PDF_STEM)-slides$(PDF_VARIANT).pdf
-PDF_NOTES        = $(OUTPUT_DIR)/$(PDF_STEM)-notes$(PDF_VARIANT).pdf
-PDF_HANDOUT      = $(OUTPUT_DIR)/$(PDF_STEM)-handout$(PDF_VARIANT).pdf
-PDF_SPEAKERNOTES = $(OUTPUT_DIR)/$(PDF_STEM)-speakernotes$(PDF_VARIANT).pdf
+  # Extract fields from the title slide front matter
+  TITLE_SLUG := $(shell grep '^title:'     $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//' \
+                  | tr '[:upper:]' '[:lower:]' \
+                  | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$$//')
+  ARCHITECT  := $(shell grep '^architect:' $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
+  EPICS      := $(shell grep '^epics:'     $(TITLE_MD) | sed 's/^[^:]*:[[:space:]]*//' | sed 's/^"//;s/"$$//')
 
-VARS_TEX = $(BUILD_DIR)/ufo-vars.tex
+  # Error if ufo-date is still present — date is now auto-generated from git.
+  ifneq ($(shell grep '^ufo-date:' $(TITLE_MD)),)
+    $(error $(TITLE_MD) contains a 'ufo-date:' field. Remove it — the date is now auto-generated from git.)
+  endif
 
-# VARS_TEX must be regenerated on every build so the git dirty check is fresh.
-.PHONY: slides all notes handout speakernotes clean $(VARS_TEX)
+  # Git-derived date, sha, and draft state.
+  # If any source file has uncommitted changes: draft mode, today's date, ???????? sha.
+  # Otherwise: date and sha from the last commit touching the sources.
+  _GIT_DIRTY := $(shell git status --porcelain $(SOURCES) 2>/dev/null)
+  ifneq ($(_GIT_DIRTY),)
+    GIT_DATE  := $(shell date '+%Y-%m-%d')
+    GIT_SHA   := ????????????
+    GIT_DRAFT := true
+  else
+    GIT_DATE  := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d' -- $(SOURCES) 2>/dev/null)
+    GIT_SHA   := $(shell git log -1 --abbrev=12 --format=%h -- $(SOURCES) 2>/dev/null)
+    GIT_DRAFT := false
+  endif
 
-slides: $(PDF_SLIDES)
+  # Validate epics, then derive slug and LaTeX links via epics.sh
+  _EPIC_VALIDATE := $(shell $(EPICS_SH) validate "$(EPICS)" 2>&1 || true)
+  ifneq ($(_EPIC_VALIDATE),)
+    $(error $(_EPIC_VALIDATE))
+  endif
+  EPICS_SLUG  := $(shell $(EPICS_SH) slug  "$(EPICS)")
+  EPICS_LINKS := $(shell $(EPICS_SH) links "$(EPICS)")
 
-all: slides notes handout speakernotes
+  # PDF filename prefix — override to 'example-' (or anything else) in the
+  # UFO Makefile before the include if this is not a real UFO.
+  PDF_PREFIX ?= ufo-
 
-notes: $(PDF_NOTES)
+  # WITH_CHANGES — convenience flag for revised UFO builds.
+  # Set WITH_CHANGES = true in the UFO Makefile to activate the change key on
+  # the title slide, append -with-changes to the PDF filename, and enable the
+  # Pandoc ufo-changes metadata that drives Mermaid/TikZ change annotations.
+  # All three variables can still be overridden individually if needed.
+  WITH_CHANGES ?= false
+  ifeq ($(WITH_CHANGES),true)
+    EXTRA_VARS_TEX    ?= \ufochangestrue
+    PDF_VARIANT       ?= -with-changes
+    PANDOC_EXTRA_META ?= --metadata ufo-changes=true
+  endif
 
-handout: $(PDF_HANDOUT)
+  # PDF variant tag — set to '-with-changes' in the UFO Makefile alongside
+  # EXTRA_VARS_TEX = \ufochangestrue to distinguish revision builds from originals.
+  PDF_VARIANT ?=
 
-speakernotes: $(PDF_SPEAKERNOTES)
+  PDF_STEM         = $(PDF_PREFIX)$(EPICS_SLUG)-$(TITLE_SLUG)
+  PDF_SLIDES       = $(OUTPUT_DIR)/$(PDF_STEM)-slides$(PDF_VARIANT).pdf
+  PDF_NOTES        = $(OUTPUT_DIR)/$(PDF_STEM)-notes$(PDF_VARIANT).pdf
+  PDF_HANDOUT      = $(OUTPUT_DIR)/$(PDF_STEM)-handout$(PDF_VARIANT).pdf
+  PDF_SPEAKERNOTES = $(OUTPUT_DIR)/$(PDF_STEM)-speakernotes$(PDF_VARIANT).pdf
 
-# Write preamble definitions into VARS_TEX.
-# \graphicspath appends the theme dir so background images are found.
-# EXTRA_VARS_TEX lets each UFO inject extra lines (e.g. \ufochangestrue).
-# \author is set via \AtEndPreamble so hyperref is already loaded when
-# \href is used inside the author block.
-$(VARS_TEX): | $(BUILD_DIR)
+  VARS_TEX = $(BUILD_DIR)/ufo-vars.tex
+
+  # VARS_TEX must be regenerated on every build so the git dirty check is fresh.
+  .PHONY: slides all notes handout speakernotes clean $(VARS_TEX)
+
+  slides: $(PDF_SLIDES)
+
+  all: slides notes handout speakernotes
+
+  notes: $(PDF_NOTES)
+
+  handout: $(PDF_HANDOUT)
+
+  speakernotes: $(PDF_SPEAKERNOTES)
+
+  # Write preamble definitions into VARS_TEX.
+  # \graphicspath appends the theme dir so background images are found.
+  # EXTRA_VARS_TEX lets each UFO inject extra lines (e.g. \ufochangestrue).
+  # \author is set via \AtEndPreamble so hyperref is already loaded when
+  # \href is used inside the author block.
+  $(VARS_TEX): | $(BUILD_DIR)
 	{ \
 	  printf '\\graphicspath{{images/}{%s/}}\n' '$(THEME_DIR)'; \
 	  printf '\\ufoGitSha{%s}\n' '$(GIT_SHA)'; \
@@ -128,11 +138,11 @@ $(VARS_TEX): | $(BUILD_DIR)
 	  printf '}\n'; \
 	} > $@
 
-# PANDOC_EXTRA_META — optional metadata flags set by individual UFO Makefiles.
-# e.g. --metadata ufo-changes=true alongside EXTRA_VARS_TEX = \ufochangestrue
-PANDOC_EXTRA_META ?=
+  # PANDOC_EXTRA_META — optional metadata flags set by individual UFO Makefiles.
+  # e.g. --metadata ufo-changes=true alongside EXTRA_VARS_TEX = \ufochangestrue
+  PANDOC_EXTRA_META ?=
 
-PANDOC_FLAGS = \
+  PANDOC_FLAGS = \
 	-t beamer \
 	--pdf-engine=xelatex \
 	--syntax-highlighting=none \
@@ -143,7 +153,7 @@ PANDOC_FLAGS = \
 	-H $(THEME) \
 	-H $(VARS_TEX)
 
-$(PDF_SLIDES): $(SOURCES) $(THEME_ALL) $(VARS_TEX) $(wildcard $(IMAGES_DIR)/*) | $(BUILD_DIR) $(OUTPUT_DIR)
+  $(PDF_SLIDES): $(SOURCES) $(THEME_ALL) $(VARS_TEX) $(wildcard $(IMAGES_DIR)/*) | $(BUILD_DIR) $(OUTPUT_DIR)
 	pandoc $(SOURCES) $(PANDOC_FLAGS) -o $(BUILD_DIR)/$(PDF_STEM)-slides.tex
 	xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) $(BUILD_DIR)/$(PDF_STEM)-slides.tex
 	xelatex -interaction=nonstopmode -output-directory=$(BUILD_DIR) $(BUILD_DIR)/$(PDF_STEM)-slides.tex
@@ -152,21 +162,48 @@ $(PDF_SLIDES): $(SOURCES) $(THEME_ALL) $(VARS_TEX) $(wildcard $(IMAGES_DIR)/*) |
 	@$(CHECK_OVERFLOW) $(BUILD_DIR)/$(PDF_STEM)-slides.log $(BUILD_DIR)/$(PDF_STEM)-slides.tex || true
 	mv $(BUILD_DIR)/$(PDF_STEM)-slides.pdf $(PDF_SLIDES)
 
-$(PDF_NOTES): $(PDF_SLIDES) | $(OUTPUT_DIR)
+  $(PDF_NOTES): $(PDF_SLIDES) | $(OUTPUT_DIR)
 	$(THEME_DIR)/generate-handouts.py $(PDF_SLIDES) notes $(PDF_NOTES)
 
-$(PDF_HANDOUT): $(PDF_SLIDES) | $(OUTPUT_DIR)
+  $(PDF_HANDOUT): $(PDF_SLIDES) | $(OUTPUT_DIR)
 	$(THEME_DIR)/generate-handouts.py $(PDF_SLIDES) handout $(PDF_HANDOUT)
 
-$(PDF_SPEAKERNOTES): $(PDF_SLIDES) | $(OUTPUT_DIR)
+  $(PDF_SPEAKERNOTES): $(PDF_SLIDES) | $(OUTPUT_DIR)
 	$(THEME_DIR)/generate-handouts.py $(PDF_SLIDES) speakernotes $(PDF_SPEAKERNOTES)
 
-$(BUILD_DIR):
+  $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(OUTPUT_DIR):
+  $(OUTPUT_DIR):
 	mkdir -p $(OUTPUT_DIR)
 
-clean:
+  clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(PDF_SLIDES) $(PDF_NOTES) $(PDF_HANDOUT) $(PDF_SPEAKERNOTES)
+
+else
+  # =========================================================================
+  # Host dispatcher mode (dispatches target to container)
+  # =========================================================================
+
+  IMAGE_NAME ?= ufo-builder
+  CURR_DIR   := $(shell pwd -P)
+  REL_DIR    := $(patsubst $(GIT_ROOT)/%,%,$(CURR_DIR))
+  TARGETS    := slides all notes handout speakernotes clean
+
+  .PHONY: $(TARGETS) image
+
+  # Default target
+  .DEFAULT_GOAL := slides
+
+  image:
+	$(CONTAINER_ENGINE) build -t $(IMAGE_NAME) $(GIT_ROOT)
+
+  $(TARGETS):
+	@if ! $(CONTAINER_ENGINE) image exists $(IMAGE_NAME) 2>/dev/null && ! $(CONTAINER_ENGINE) image inspect $(IMAGE_NAME) >/dev/null 2>&1; then \
+	  echo "Container image $(IMAGE_NAME) not found. Building it..."; \
+	  $(CONTAINER_ENGINE) build -t $(IMAGE_NAME) $(GIT_ROOT); \
+	fi
+	$(CONTAINER_ENGINE) run --rm -v "$(GIT_ROOT):/workspace:z" -w "/workspace/$(REL_DIR)" $(IMAGE_NAME) make FORCE_LOCAL=true $@
+
+endif
